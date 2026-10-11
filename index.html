@@ -124,7 +124,7 @@
     ・負けた側が 1 個も上げていなければギャモン(2 点)、さらに相手のインナーボードかバーに駒が残っていればバックギャモン(3 点)です。<br>
     ・<b>マッチ</b>:下で長さを選んで「新しいマッチ」。先に指定の点数に達したほうがマッチの勝ちです。<br>
     ・<b>ダブリングキューブ</b>:自分の番でダイスを振る前に「ダブル」を押すと、点数の倍率を倍にするよう申し込めます。相手はテイク(倍で続行、キューブは相手のものに)かパス(その時点の点数で負け)を選びます。キューブを持っている側だけが次にダブルできます。<br>
-    ・<b>ピップ数</b>:盤の右端(トレイの真ん中)に、上がコンピューター(赤)、下があなた(白)の残り歩数を表示します。右上のチェックで表示を切り替えられます。<br>
+    ・<b>ピップ数</b>:盤の右端(トレイの真ん中)に、上がコンピューター(黒)、下があなた(白)の残り歩数を表示します。右上のチェックで表示を切り替えられます。<br>
     ・<b>投了</b>:「投了」を 2 回押すと、その時点の局面で負けた扱い(1 個も上げていなければギャモン、さらに相手陣地かバーに駒があればバックギャモン、それぞれキューブ倍)になります。<br>
     ・<b>クロフォードルール</b>:どちらかが初めて「あと 1 点で勝ち」になった直後の 1 ゲームは、どちらもダブルできません。
   </details>
@@ -696,17 +696,18 @@ svg.addEventListener('click', e => {
 
 // ---------- 描画 ----------
 function checker(cx, cy, pl, label, sel) {
-  const fill = pl === 'h' ? '#f5f0e3' : '#8b1e1e';
-  const stroke = sel ? '#ffd23f' : (pl === 'h' ? '#6b6457' : '#3a0b0b');
+  // コンピューターの駒は黒に明るい縁取り(赤・緑どちらのポイントの上でも見分けやすく)
+  const fill = pl === 'h' ? '#f5f0e3' : '#1d1d22';
+  const stroke = sel ? '#ffd23f' : (pl === 'h' ? '#6b6457' : '#d8c9a3');
   const sw = sel ? 4 : 2;
   let s = `<circle cx="${cx}" cy="${cy}" r="${R - 1}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`;
-  s += `<circle cx="${cx}" cy="${cy}" r="${R - 7}" fill="none" stroke="${pl === 'h' ? '#d8d0bc' : '#a83a3a'}" stroke-width="1.5"/>`;
+  s += `<circle cx="${cx}" cy="${cy}" r="${R - 7}" fill="none" stroke="${pl === 'h' ? '#d8d0bc' : '#5a5a66'}" stroke-width="1.5"/>`;
   if (label) s += `<text ${tx(cx)} y="${cy + 6}" text-anchor="middle" font-size="17" font-weight="bold" fill="${pl === 'h' ? '#333' : '#fff'}">${label}</text>`;
   return s;
 }
 
 function die(x, y, v, size, dim, pl) {
-  const bg = pl === 'h' ? '#fffdf6' : '#8b1e1e', dot = pl === 'h' ? '#222' : '#fff';
+  const bg = pl === 'h' ? '#fffdf6' : '#1d1d22', dot = pl === 'h' ? '#222' : '#fff';
   let s = `<g opacity="${dim ? 0.3 : 1}"><rect x="${x}" y="${y}" width="${size}" height="${size}" rx="7" fill="${bg}" stroke="#222" stroke-width="1.5"/>`;
   const c = size / 2, o = size * 0.27, r = size * 0.09;
   const P = { 1: [[0, 0]], 2: [[-1, -1], [1, 1]], 3: [[-1, -1], [0, 0], [1, 1]], 4: [[-1, -1], [1, -1], [-1, 1], [1, 1]], 5: [[-1, -1], [1, -1], [0, 0], [-1, 1], [1, 1]], 6: [[-1, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [1, 1]] };
@@ -777,12 +778,12 @@ function render() {
   }
   // 上がった駒(トレイ)
   for (let i = 0; i < st.h[0]; i++) s += `<rect x="${TX0 + 8}" y="${BOT - 6 - (i + 1) * 13}" width="56" height="11" rx="3" fill="#f5f0e3" stroke="#6b6457"/>`;
-  for (let i = 0; i < st.c[0]; i++) s += `<rect x="${TX0 + 8}" y="${TOP + 6 + i * 13}" width="56" height="11" rx="3" fill="#8b1e1e" stroke="#3a0b0b"/>`;
+  for (let i = 0; i < st.c[0]; i++) s += `<rect x="${TX0 + 8}" y="${TOP + 6 + i * 13}" width="56" height="11" rx="3" fill="#1d1d22" stroke="#d8c9a3"/>`;
   // ピップ数:トレイの仕切りのすぐ上(コンピューター)と下(あなた)に大きく表示
   if ($('chkPips').checked) {
     s += `<rect x="${TX0 + 1}" y="${MID - 40}" width="70" height="80" rx="4" fill="#2c1b0f"/>`;
     s += `<text ${tx(TC)} y="${MID - 28}" text-anchor="middle" font-size="11" fill="#cfc6b0">ピップ</text>`;
-    s += `<text ${tx(TC)} y="${MID - 4}" text-anchor="middle" font-size="26" font-weight="bold" fill="#ff8a7a">${BG.pip(st.c)}</text>`;
+    s += `<text ${tx(TC)} y="${MID - 4}" text-anchor="middle" font-size="26" font-weight="bold" fill="#b8bccb">${BG.pip(st.c)}</text>`;
     s += `<text ${tx(TC)} y="${MID + 32}" text-anchor="middle" font-size="26" font-weight="bold" fill="#fffaf0">${BG.pip(st.h)}</text>`;
   }
   // ダイス
