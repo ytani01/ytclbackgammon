@@ -378,17 +378,22 @@ const rnd = (() => {
     return 1 + (buf[0] % 6);
   };
 })();
-const TOP = 30, BOT = 510, MID = 270, R = 21;
+const TOP = 30, BOT = 510, MID = 270;
 // 盤の横幅はポイント幅 W で決まる(通常 46)。スマホ横画面では画面の形に合わせて W を広げる
-let W = 46, BX, RX, RE, TX0, TC, TOTAL, LC, RC;
+let W = 46, R = 21, BW = 44, BX, RX, RE, TX0, TC, TOTAL, LC, RC;
 const LANDSCAPE = '(orientation: landscape) and (max-height: 520px)';
 function layout() {
-  W = 46;
+  W = 46; R = 21; BW = 44;
   if (window.matchMedia && matchMedia(LANDSCAPE).matches) {
-    const aspect = (innerWidth - 150) / (innerHeight - 6);
-    W = Math.max(46, Math.min(90, Math.floor((aspect * 538 - 152) / 12)));
+    // ポイントが広がった分だけ駒も大きくし、バーも駒が入る幅にする
+    const vbw = (innerWidth - 150) / (innerHeight - 6) * 538;
+    for (let k = 0; k < 2; k++) {
+      W = Math.max(46, Math.min(90, Math.floor((vbw - 108 - BW) / 12)));
+      R = Math.max(21, Math.min(36, Math.floor(W / 2) - 1));
+      BW = Math.max(44, 2 * R + 4);
+    }
   }
-  BX = 20 + 6 * W; RX = BX + 44; RE = RX + 6 * W; TX0 = RE + 20; TC = TX0 + 36; TOTAL = TX0 + 80;
+  BX = 20 + 6 * W; RX = BX + BW; RE = RX + 6 * W; TX0 = RE + 20; TC = TX0 + 36; TOTAL = TX0 + 80;
   LC = 20 + 3 * W; RC = RX + 3 * W;
   svg.setAttribute('viewBox', `6 2 ${TOTAL - 12} 538`);
   svg.style.setProperty('--aspect', ((TOTAL - 12) / 538).toFixed(4));
@@ -701,8 +706,8 @@ function checker(cx, cy, pl, label, sel) {
   const stroke = sel ? '#ffd23f' : (pl === 'h' ? '#6b6457' : '#d8c9a3');
   const sw = sel ? 4 : 2;
   let s = `<circle cx="${cx}" cy="${cy}" r="${R - 1}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`;
-  s += `<circle cx="${cx}" cy="${cy}" r="${R - 7}" fill="none" stroke="${pl === 'h' ? '#d8d0bc' : '#5a5a66'}" stroke-width="1.5"/>`;
-  if (label) s += `<text ${tx(cx)} y="${cy + 6}" text-anchor="middle" font-size="17" font-weight="bold" fill="${pl === 'h' ? '#333' : '#fff'}">${label}</text>`;
+  s += `<circle cx="${cx}" cy="${cy}" r="${R * 0.68}" fill="none" stroke="${pl === 'h' ? '#d8d0bc' : '#5a5a66'}" stroke-width="1.5"/>`;
+  if (label) s += `<text ${tx(cx)} y="${cy + R * 0.3}" text-anchor="middle" font-size="${Math.round(R * 0.8)}" font-weight="bold" fill="${pl === 'h' ? '#333' : '#fff'}">${label}</text>`;
   return s;
 }
 
@@ -728,7 +733,7 @@ function render() {
   s += `<rect x="8" y="18" width="${RE + 4}" height="504" rx="10" fill="#5a3a22"/>`;
   s += `<rect x="20" y="${TOP}" width="${6 * W}" height="${BOT - TOP}" fill="#e8d6ad"/>`;
   s += `<rect x="${RX}" y="${TOP}" width="${6 * W}" height="${BOT - TOP}" fill="#e8d6ad"/>`;
-  s += `<rect x="${BX}" y="${TOP}" width="44" height="${BOT - TOP}" fill="#4a2f1b"/>`;
+  s += `<rect x="${BX}" y="${TOP}" width="${BW}" height="${BOT - TOP}" fill="#4a2f1b"/>`;
   s += `<rect x="${TX0}" y="${TOP}" width="72" height="${BOT - TOP}" rx="6" fill="#4a2f1b"/>`;
   s += `<line x1="${TX0}" y1="${MID}" x2="${TX0 + 72}" y2="${MID}" stroke="#2c1b0f" stroke-width="3"/>`;
   // ポイント(三角形)と番号
@@ -750,31 +755,33 @@ function render() {
     const n = hn || cn; if (!n) continue;
     const pl = hn ? 'h' : 'c', x = colX(p) + W / 2, top = p >= 13;
     const shown = Math.min(n, 5);
+    // 駒が大きいときは重ねて並べ、盤の中央を越えないようにする
+    const step = shown > 1 ? Math.min(2 * R, (MID - TOP - 6 - 2 * R) / (shown - 1)) : 0;
     for (let i = 0; i < shown; i++) {
-      const cy = top ? TOP + R + i * 42 : BOT - R - i * 42;
+      const cy = top ? TOP + R + i * step : BOT - R - i * step;
       const last = i === shown - 1;
       s += checker(x, cy, pl, last && n > 5 ? n : '', last && pl === 'h' && G.sel === p);
     }
     if (pl === 'h' && sources.has(p) && G.sel !== p) {
-      const cy = top ? TOP + R + (shown - 1) * 42 : BOT - R - (shown - 1) * 42;
+      const cy = top ? TOP + R + (shown - 1) * step : BOT - R - (shown - 1) * step;
       s += `<circle cx="${x}" cy="${cy}" r="${R + 1}" fill="none" stroke="#ffd23f" stroke-width="2" stroke-dasharray="4 3" pointer-events="none"/>`;
     }
   }
   // バー
   for (let i = 0; i < Math.min(st.h[25], 3); i++) {
     const last = i === Math.min(st.h[25], 3) - 1;
-    s += checker(BX + 22, MID + 30 + R + i * 42, 'h', last && st.h[25] > 3 ? st.h[25] : '', last && G.sel === 25);
+    s += checker(BX + BW / 2, MID + 24 + R + i * Math.min(2 * R, (MID - TOP - 30 - 2 * R) / 2), 'h', last && st.h[25] > 3 ? st.h[25] : '', last && G.sel === 25);
   }
   for (let i = 0; i < Math.min(st.c[25], 3); i++) {
     const last = i === Math.min(st.c[25], 3) - 1;
-    s += checker(BX + 22, MID - 30 - R - i * 42, 'c', last && st.c[25] > 3 ? st.c[25] : '', false);
+    s += checker(BX + BW / 2, MID - 24 - R - i * Math.min(2 * R, (MID - TOP - 30 - 2 * R) / 2), 'c', last && st.c[25] > 3 ? st.c[25] : '', false);
   }
   // ダブリングキューブ(持ち主の側に置く。クロフォードゲームでは表示しない)
   if (!G.crawford && M.len > 1) {
     const cv = G.cube.value === 1 ? 64 : G.cube.value;
     const cy = G.cube.owner === 'h' ? BOT - 24 : G.cube.owner === 'c' ? TOP + 24 : MID;
-    s += `<rect x="${BX + 4}" y="${cy - 18}" width="36" height="36" rx="5" fill="#f7f3e8" stroke="#222" stroke-width="2"/>`;
-    s += `<text ${tx(BX + 22)} y="${cy + 7}" text-anchor="middle" font-size="${cv >= 10 ? 16 : 20}" font-weight="bold" fill="#222">${cv}</text>`;
+    s += `<rect x="${BX + BW / 2 - 18}" y="${cy - 18}" width="36" height="36" rx="5" fill="#f7f3e8" stroke="#222" stroke-width="2"/>`;
+    s += `<text ${tx(BX + BW / 2)} y="${cy + 7}" text-anchor="middle" font-size="${cv >= 10 ? 16 : 20}" font-weight="bold" fill="#222">${cv}</text>`;
   }
   // 上がった駒(トレイ)
   for (let i = 0; i < st.h[0]; i++) s += `<rect x="${TX0 + 8}" y="${BOT - 6 - (i + 1) * 13}" width="56" height="11" rx="3" fill="#f5f0e3" stroke="#6b6457"/>`;
@@ -805,7 +812,7 @@ function render() {
     const x = colX(p), top = p >= 13;
     s += `<rect class="pt" data-pt="${p}" x="${x}" y="${top ? TOP : MID}" width="${W}" height="${MID - TOP}" fill="transparent"/>`;
   }
-  s += `<rect class="pt" data-pt="25" x="${BX}" y="${TOP}" width="44" height="${BOT - TOP}" fill="transparent"/>`;
+  s += `<rect class="pt" data-pt="25" x="${BX}" y="${TOP}" width="${BW}" height="${BOT - TOP}" fill="transparent"/>`;
   s += `<rect class="pt" data-pt="0" x="${TX0}" y="${MID}" width="72" height="${BOT - MID}" fill="transparent"/>`;
   svg.innerHTML = M.flip ? `<g transform="translate(${TOTAL},0) scale(-1,1)">${s}</g>` : s;
 
