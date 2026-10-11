@@ -40,7 +40,8 @@
   /* スマホの横画面(高さが低い): 盤を左に高さいっぱい、スコア・メッセージ・ボタンを右の列へ */
   @media (orientation: landscape) and (max-height: 520px) {
     #app { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 8px; align-items: start; padding: 2px 6px 16px; max-width: none; }
-    #board { grid-column: 1; grid-row: 1 / span 4; width: calc((100vh - 6px) * 1.3086); width: calc((100dvh - 6px) * 1.3086); max-width: 72vw; min-width: 0; margin: 0; }
+    #app { grid-template-columns: auto minmax(120px, 1fr); }
+    #board { grid-column: 1; grid-row: 1 / span 4; width: calc((100vh - 6px) * var(--aspect, 1.3086)); width: calc((100dvh - 6px) * var(--aspect, 1.3086)); max-width: calc(100vw - 134px); min-width: 0; margin: 0; }
     #top, #sub, #msg, #controls { grid-column: 2; min-width: 0; }
     #top { grid-row: 1; flex-direction: column; align-items: flex-start; }
     h1 { display: none; }
@@ -51,7 +52,13 @@
     #pipbox { flex-wrap: wrap; gap: 2px 8px; }
     #msg { grid-row: 3; font-size: .85rem; min-height: 0; }
     #controls { grid-row: 4; }
-    #controls button { flex: 1 1 calc(50% - 6px); padding: 8px 6px; font-size: .9rem; }
+    #controls { gap: 4px; }
+    #controls button { flex: 1 1 calc(50% - 4px); padding: 7px 4px; font-size: .8rem; }
+    #msg { font-size: .78rem; padding: 4px 6px; }
+    #score { gap: 3px; padding: 2px 6px; }
+    #score b { font-size: 1.3rem; }
+    #score .who { font-size: .72rem; }
+    #sub { font-size: .72rem; }
     #setup, details { grid-column: 1 / -1; }
   }
 </style>
@@ -371,7 +378,21 @@ const rnd = (() => {
     return 1 + (buf[0] % 6);
   };
 })();
-const W = 46, TOP = 30, BOT = 510, MID = 270, R = 21;
+const TOP = 30, BOT = 510, MID = 270, R = 21;
+// 盤の横幅はポイント幅 W で決まる(通常 46)。スマホ横画面では画面の形に合わせて W を広げる
+let W = 46, BX, RX, RE, TX0, TC, TOTAL, LC, RC;
+const LANDSCAPE = '(orientation: landscape) and (max-height: 520px)';
+function layout() {
+  W = 46;
+  if (window.matchMedia && matchMedia(LANDSCAPE).matches) {
+    const aspect = (innerWidth - 150) / (innerHeight - 6);
+    W = Math.max(46, Math.min(90, Math.floor((aspect * 538 - 152) / 12)));
+  }
+  BX = 20 + 6 * W; RX = BX + 44; RE = RX + 6 * W; TX0 = RE + 20; TC = TX0 + 36; TOTAL = TX0 + 80;
+  LC = 20 + 3 * W; RC = RX + 3 * W;
+  svg.setAttribute('viewBox', `6 2 ${TOTAL - 12} 538`);
+  svg.style.setProperty('--aspect', ((TOTAL - 12) / 538).toFixed(4));
+}
 // コンピューターの強さ。noise は手の評価に足すブレ、cubeNoise はダブル判断のブレ
 const LEVELS = {
   easy: { name: '初級', noise: 25, cubeNoise: 0.2, deep: false },
@@ -382,10 +403,10 @@ const M = { level: 'normal', flip: false, len: 5, score: { h: 0, c: 0 }, crawfor
 let G;
 
 function colX(p) {
-  if (p <= 6) return 340 + (6 - p) * W;
+  if (p <= 6) return RX + (6 - p) * W;
   if (p <= 12) return 20 + (12 - p) * W;
   if (p <= 18) return 20 + (p - 13) * W;
-  return 340 + (p - 19) * W;
+  return RX + (p - 19) * W;
 }
 
 function newMatch() {
@@ -701,13 +722,14 @@ function render() {
   const dests = G.phase === 'humanMove' ? new Set(pathsFrom(G.sel).keys()) : new Set();
   const sources = new Set(G.steps.map(m => m.from));
   let s = '';
+  layout();
   // 枠と盤
-  s += `<rect x="8" y="18" width="620" height="504" rx="10" fill="#5a3a22"/>`;
-  s += `<rect x="20" y="${TOP}" width="276" height="${BOT - TOP}" fill="#e8d6ad"/>`;
-  s += `<rect x="340" y="${TOP}" width="276" height="${BOT - TOP}" fill="#e8d6ad"/>`;
-  s += `<rect x="296" y="${TOP}" width="44" height="${BOT - TOP}" fill="#4a2f1b"/>`;
-  s += `<rect x="636" y="${TOP}" width="72" height="${BOT - TOP}" rx="6" fill="#4a2f1b"/>`;
-  s += `<line x1="636" y1="${MID}" x2="708" y2="${MID}" stroke="#2c1b0f" stroke-width="3"/>`;
+  s += `<rect x="8" y="18" width="${RE + 4}" height="504" rx="10" fill="#5a3a22"/>`;
+  s += `<rect x="20" y="${TOP}" width="${6 * W}" height="${BOT - TOP}" fill="#e8d6ad"/>`;
+  s += `<rect x="${RX}" y="${TOP}" width="${6 * W}" height="${BOT - TOP}" fill="#e8d6ad"/>`;
+  s += `<rect x="${BX}" y="${TOP}" width="44" height="${BOT - TOP}" fill="#4a2f1b"/>`;
+  s += `<rect x="${TX0}" y="${TOP}" width="72" height="${BOT - TOP}" rx="6" fill="#4a2f1b"/>`;
+  s += `<line x1="${TX0}" y1="${MID}" x2="${TX0 + 72}" y2="${MID}" stroke="#2c1b0f" stroke-width="3"/>`;
   // ポイント(三角形)と番号
   for (let p = 1; p <= 24; p++) {
     const x = colX(p), top = p >= 13;
@@ -718,7 +740,7 @@ function render() {
   }
   // 行き先のハイライト
   for (const d of dests) {
-    if (d === 0) s += `<rect x="638" y="${MID + 2}" width="68" height="${BOT - MID - 4}" rx="6" fill="#3ddc84" opacity="0.45" pointer-events="none"/>`;
+    if (d === 0) s += `<rect x="${TX0 + 2}" y="${MID + 2}" width="68" height="${BOT - MID - 4}" rx="6" fill="#3ddc84" opacity="0.45" pointer-events="none"/>`;
     else { const x = colX(d), top = d >= 13; s += `<rect x="${x + 2}" y="${top ? TOP + 2 : MID + 2}" width="${W - 4}" height="${MID - TOP - 4}" rx="6" fill="#3ddc84" opacity="0.45" pointer-events="none"/>`; }
   }
   // 駒
@@ -740,41 +762,41 @@ function render() {
   // バー
   for (let i = 0; i < Math.min(st.h[25], 3); i++) {
     const last = i === Math.min(st.h[25], 3) - 1;
-    s += checker(318, MID + 30 + R + i * 42, 'h', last && st.h[25] > 3 ? st.h[25] : '', last && G.sel === 25);
+    s += checker(BX + 22, MID + 30 + R + i * 42, 'h', last && st.h[25] > 3 ? st.h[25] : '', last && G.sel === 25);
   }
   for (let i = 0; i < Math.min(st.c[25], 3); i++) {
     const last = i === Math.min(st.c[25], 3) - 1;
-    s += checker(318, MID - 30 - R - i * 42, 'c', last && st.c[25] > 3 ? st.c[25] : '', false);
+    s += checker(BX + 22, MID - 30 - R - i * 42, 'c', last && st.c[25] > 3 ? st.c[25] : '', false);
   }
   // ダブリングキューブ(持ち主の側に置く。クロフォードゲームでは表示しない)
   if (!G.crawford && M.len > 1) {
     const cv = G.cube.value === 1 ? 64 : G.cube.value;
     const cy = G.cube.owner === 'h' ? BOT - 24 : G.cube.owner === 'c' ? TOP + 24 : MID;
-    s += `<rect x="300" y="${cy - 18}" width="36" height="36" rx="5" fill="#f7f3e8" stroke="#222" stroke-width="2"/>`;
-    s += `<text ${tx(318)} y="${cy + 7}" text-anchor="middle" font-size="${cv >= 10 ? 16 : 20}" font-weight="bold" fill="#222">${cv}</text>`;
+    s += `<rect x="${BX + 4}" y="${cy - 18}" width="36" height="36" rx="5" fill="#f7f3e8" stroke="#222" stroke-width="2"/>`;
+    s += `<text ${tx(BX + 22)} y="${cy + 7}" text-anchor="middle" font-size="${cv >= 10 ? 16 : 20}" font-weight="bold" fill="#222">${cv}</text>`;
   }
   // 上がった駒(トレイ)
-  for (let i = 0; i < st.h[0]; i++) s += `<rect x="644" y="${BOT - 6 - (i + 1) * 13}" width="56" height="11" rx="3" fill="#f5f0e3" stroke="#6b6457"/>`;
-  for (let i = 0; i < st.c[0]; i++) s += `<rect x="644" y="${TOP + 6 + i * 13}" width="56" height="11" rx="3" fill="#8b1e1e" stroke="#3a0b0b"/>`;
+  for (let i = 0; i < st.h[0]; i++) s += `<rect x="${TX0 + 8}" y="${BOT - 6 - (i + 1) * 13}" width="56" height="11" rx="3" fill="#f5f0e3" stroke="#6b6457"/>`;
+  for (let i = 0; i < st.c[0]; i++) s += `<rect x="${TX0 + 8}" y="${TOP + 6 + i * 13}" width="56" height="11" rx="3" fill="#8b1e1e" stroke="#3a0b0b"/>`;
   // ピップ数:トレイの仕切りのすぐ上(コンピューター)と下(あなた)に大きく表示
   if ($('chkPips').checked) {
-    s += `<rect x="637" y="${MID - 40}" width="70" height="80" rx="4" fill="#2c1b0f"/>`;
-    s += `<text ${tx(672)} y="${MID - 28}" text-anchor="middle" font-size="11" fill="#cfc6b0">ピップ</text>`;
-    s += `<text ${tx(672)} y="${MID - 4}" text-anchor="middle" font-size="26" font-weight="bold" fill="#ff8a7a">${BG.pip(st.c)}</text>`;
-    s += `<text ${tx(672)} y="${MID + 32}" text-anchor="middle" font-size="26" font-weight="bold" fill="#fffaf0">${BG.pip(st.h)}</text>`;
+    s += `<rect x="${TX0 + 1}" y="${MID - 40}" width="70" height="80" rx="4" fill="#2c1b0f"/>`;
+    s += `<text ${tx(TC)} y="${MID - 28}" text-anchor="middle" font-size="11" fill="#cfc6b0">ピップ</text>`;
+    s += `<text ${tx(TC)} y="${MID - 4}" text-anchor="middle" font-size="26" font-weight="bold" fill="#ff8a7a">${BG.pip(st.c)}</text>`;
+    s += `<text ${tx(TC)} y="${MID + 32}" text-anchor="middle" font-size="26" font-weight="bold" fill="#fffaf0">${BG.pip(st.h)}</text>`;
   }
   // ダイス
   if (G.openDice) {
     // あなたのダイスは向きに関係なく画面の右側、コンピューターは左側
-    s += die(M.flip ? 136 : 450, MID - 22, G.openDice.h, 44, false, 'h');
-    s += die(M.flip ? 450 : 136, MID - 22, G.openDice.c, 44, false, 'c');
+    s += die((M.flip ? LC : RC) - 22, MID - 22, G.openDice.h, 44, false, 'h');
+    s += die((M.flip ? RC : LC) - 22, MID - 22, G.openDice.c, 44, false, 'c');
   } else if (G.dice && G.phase !== 'humanRoll' && G.phase !== 'over' && G.phase !== 'opening') {
     const pl = G.phase === 'cpu' ? 'c' : 'h';
     const dl = G.dice[0] === G.dice[1] ? [G.dice[0], G.dice[0], G.dice[0], G.dice[0]] : G.dice.slice();
     const used = dl.map(() => false);
     for (const m of G.played) { const i = dl.findIndex((v, k) => v === m.die && !used[k]); if (i >= 0) used[i] = true; }
     const size = 40, gap = 48, total = dl.length * gap - 8;
-    const x0 = ((pl === 'h') !== M.flip ? 478 : 158) - total / 2;
+    const x0 = ((pl === 'h') !== M.flip ? RC : LC) - total / 2;
     dl.forEach((v, k) => { s += die(x0 + k * gap, MID - size / 2, v, size, used[k] || G.phase === 'humanNoMove', pl); });
   }
   // クリック領域
@@ -782,9 +804,9 @@ function render() {
     const x = colX(p), top = p >= 13;
     s += `<rect class="pt" data-pt="${p}" x="${x}" y="${top ? TOP : MID}" width="${W}" height="${MID - TOP}" fill="transparent"/>`;
   }
-  s += `<rect class="pt" data-pt="25" x="296" y="${TOP}" width="44" height="${BOT - TOP}" fill="transparent"/>`;
-  s += `<rect class="pt" data-pt="0" x="636" y="${MID}" width="72" height="${BOT - MID}" fill="transparent"/>`;
-  svg.innerHTML = M.flip ? `<g transform="translate(716,0) scale(-1,1)">${s}</g>` : s;
+  s += `<rect class="pt" data-pt="25" x="${BX}" y="${TOP}" width="44" height="${BOT - TOP}" fill="transparent"/>`;
+  s += `<rect class="pt" data-pt="0" x="${TX0}" y="${MID}" width="72" height="${BOT - MID}" fill="transparent"/>`;
+  svg.innerHTML = M.flip ? `<g transform="translate(${TOTAL},0) scale(-1,1)">${s}</g>` : s;
 
   $('sh').textContent = M.score.h; $('sc').textContent = M.score.c; $('target').textContent = `${M.len}点先取`;
   $('matchinfo').textContent = `${M.len} ポイントマッチ・${LEVELS[M.level].name}` + (G.crawford ? '・クロフォードゲーム' : '') + (G.cube.value > 1 ? `・キューブ ${G.cube.value}(${G.cube.owner === 'h' ? 'あなた' : 'コンピューター'}側)` : '');
@@ -874,6 +896,7 @@ document.addEventListener('keydown', e => {
   }
 });
 newMatch();
+window.addEventListener('resize', () => { if (G) render(); });
 </script>
 </body>
 </html>
