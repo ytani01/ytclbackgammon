@@ -119,7 +119,7 @@
     ・相手の駒が 2 個以上あるポイントには止まれません。1 個だけのときは打ち取れ(ヒット)、その駒はバーに戻ります。<br>
     ・バーに駒があるときは、先にそれを相手のインナーボード(奥の 19〜24)へ入れる必要があります。<br>
     ・両方の目を使えるなら必ず両方使います。片方しか使えないときは、大きい目を使える限り大きい目を使います。<br>
-    ・全部動かしたら「確定」、やり直したいときは「戻す」を押します。<br>
+    ・全部動かしたら、薄くなったダイスをタップするか「確定」を押します。やり直したいときは「戻す」を押します。<br>
     ・キーボード:<b>Enter</b> でダイスを振る/確定、<b>Backspace</b> で戻す。<br>
     ・負けた側が 1 個も上げていなければギャモン(2 点)、さらに相手のインナーボードかバーに駒が残っていればバックギャモン(3 点)です。<br>
     ・<b>マッチ</b>:下で長さを選んで「新しいマッチ」。先に指定の点数に達したほうがマッチの勝ちです。<br>
@@ -590,7 +590,7 @@ function doPath(path) {
     G.played.push(m);
   }
   computeSteps();
-  if (G.steps.length === 0) setMsg('動かし終わりました。「確定」を押してください(「戻す」でやり直し)。');
+  if (G.steps.length === 0) setMsg('動かし終わりました。ダイスをタップするか「確定」で手番を終えます(「戻す」でやり直し)。');
   render();
 }
 
@@ -598,7 +598,7 @@ function doStep(m) {
   G.state = BG.applyMove(G.state, 'h', m).state;
   G.played.push(m);
   computeSteps();
-  if (G.steps.length === 0) setMsg('動かし終わりました。「確定」を押してください(「戻す」でやり直し)。');
+  if (G.steps.length === 0) setMsg('動かし終わりました。ダイスをタップするか「確定」で手番を終えます(「戻す」でやり直し)。');
   render();
 }
 
@@ -702,6 +702,7 @@ svg.addEventListener('click', e => {
     if (act.dataset.act === 'roll') onRoll();
     else if (act.dataset.act === 'double') onDouble();
     else if (act.dataset.act === 'take') onTake();
+    else if (act.dataset.act === 'ok') onOk();
     return;
   }
   if (G.phase !== 'humanMove') return;
@@ -749,7 +750,7 @@ function render() {
   const st = G.state;
   const dests = G.phase === 'humanMove' ? new Set(pathsFrom(G.sel).keys()) : new Set();
   const sources = new Set(G.steps.map(m => m.from));
-  let s = '';
+  let s = '', okArea = '';
   layout();
   // 枠と盤
   s += `<rect x="8" y="18" width="${RE + 4}" height="504" rx="10" fill="#5a3a22"/>`;
@@ -839,6 +840,11 @@ function render() {
     const size = 40, gap = 48, total = dl.length * gap - 8;
     const x0 = ((pl === 'h') !== M.flip ? RC : LC) - total / 2;
     dl.forEach((v, k) => { s += die(x0 + k * gap, MID - size / 2, v, size, used[k] || G.phase === 'humanNoMove', pl); });
+    // 動かし終わったら、薄くなったダイスをタップで確定
+    if (G.phase === 'humanMove' && G.steps.length === 0) {
+      s += `<text ${tx(x0 + total / 2)} y="${MID + size / 2 + 18}" text-anchor="middle" font-size="14" font-weight="bold" fill="#2f4f3f">タップで確定</text>`;
+      okArea = `<rect class="pt" data-act="ok" x="${x0 - 8}" y="${MID - size / 2 - 8}" width="${total + 16}" height="${size + 36}" rx="8" fill="transparent" stroke="#ffd23f" stroke-width="3" stroke-dasharray="5 3"/>`;
+    }
   }
   // クリック領域
   for (let p = 1; p <= 24; p++) {
@@ -858,6 +864,7 @@ function render() {
     s += `<text ${tx(cx)} y="${cy + 12}" text-anchor="middle" font-size="17" font-weight="bold" fill="#fff6dc">振る</text>`;
     s += `</g>`;
   }
+  s += okArea;
   // ダブルされたとき:真ん中の大きなキューブをタップでテイク
   if (G.phase === 'humanTake' && G.offer) {
     s += `<rect class="pt" data-act="take" x="${BX + BW / 2 - 72}" y="${MID - 72}" width="144" height="144" fill="transparent"/>`;
