@@ -830,14 +830,14 @@ function render() {
   // ダイス
   if (G.openDice) {
     // あなたのダイスは向きに関係なく画面の右側、コンピューターは左側
-    s += die((M.flip ? LC : RC) - 22, MID - 22, G.openDice.h, 44, false, 'h');
-    s += die((M.flip ? RC : LC) - 22, MID - 22, G.openDice.c, 44, false, 'c');
+    s += die((M.flip ? LC : RC) - 26, MID - 26, G.openDice.h, 52, false, 'h');
+    s += die((M.flip ? RC : LC) - 26, MID - 26, G.openDice.c, 52, false, 'c');
   } else if (G.dice && G.phase !== 'humanRoll' && G.phase !== 'over' && G.phase !== 'opening') {
     const pl = G.phase === 'cpu' ? 'c' : 'h';
     const dl = G.dice[0] === G.dice[1] ? [G.dice[0], G.dice[0], G.dice[0], G.dice[0]] : G.dice.slice();
     const used = dl.map(() => false);
     for (const m of G.played) { const i = dl.findIndex((v, k) => v === m.die && !used[k]); if (i >= 0) used[i] = true; }
-    const size = 40, gap = 48, total = dl.length * gap - 8;
+    const size = 52, gap = 60, total = dl.length * gap - 8;
     const x0 = ((pl === 'h') !== M.flip ? RC : LC) - total / 2;
     dl.forEach((v, k) => { s += die(x0 + k * gap, MID - size / 2, v, size, used[k] || G.phase === 'humanNoMove', pl); });
     // 動かし終わったら、薄くなったダイスをタップで確定
