@@ -380,6 +380,8 @@ const rnd = (() => {
 })();
 const TOP = 30, BOT = 510, MID = 270;
 // 盤の横幅はポイント幅 W で決まる(通常 46)。スマホ横画面では画面の形に合わせて W を広げる
+// キューブの一辺(バーの幅に収まる範囲で大きく)
+function cubeSize() { return Math.min(BW - 2, 60); }
 let W = 46, R = 21, BW = 44, BX, RX, RE, TX0, TC, TOTAL, LC, RC;
 const LANDSCAPE = '(orientation: landscape) and (max-height: 520px)';
 function layout() {
@@ -802,17 +804,18 @@ function render() {
   // ダブリングキューブ(持ち主の側に置く。クロフォードゲームでは表示しない)
   if (!G.crawford && M.len > 1 && !G.offer) {
     const cv = G.cube.value === 1 ? 64 : G.cube.value;
-    const cy = G.cube.owner === 'h' ? BOT - 24 : G.cube.owner === 'c' ? TOP + 24 : MID;
-    s += `<rect x="${BX + BW / 2 - 18}" y="${cy - 18}" width="36" height="36" rx="5" fill="#f7f3e8" stroke="#222" stroke-width="2"/>`;
-    s += `<text ${tx(BX + BW / 2)} y="${cy + 7}" text-anchor="middle" font-size="${cv >= 10 ? 16 : 20}" font-weight="bold" fill="#222">${cv}</text>`;
+    const cs = cubeSize(), cy = G.cube.owner === 'h' ? BOT - cs / 2 - 4 : G.cube.owner === 'c' ? TOP + cs / 2 + 4 : MID;
+    s += `<rect x="${BX + BW / 2 - cs / 2}" y="${cy - cs / 2}" width="${cs}" height="${cs}" rx="6" fill="#f7f3e8" stroke="#222" stroke-width="2"/>`;
+    const fs = Math.round(cs * (cv >= 10 ? 0.44 : 0.56));
+    s += `<text ${tx(BX + BW / 2)} y="${cy + fs * 0.36}" text-anchor="middle" font-size="${fs}" font-weight="bold" fill="#222">${cv}</text>`;
   }
   // ダブルの申し込み中:新しい値のキューブを盤の真ん中に大きく表示
   if (G.offer) {
-    const cx = BX + BW / 2, sz = 84;
-    s += `<rect x="${cx - 72}" y="${MID - sz / 2 - 30}" width="144" height="${sz + (G.phase === 'humanTake' ? 62 : 42)}" rx="10" fill="#1a1208" opacity="0.8" pointer-events="none"/>`;
+    const cx = BX + BW / 2, sz = 100;
+    s += `<rect x="${cx - 80}" y="${MID - sz / 2 - 30}" width="160" height="${sz + (G.phase === 'humanTake' ? 62 : 42)}" rx="10" fill="#1a1208" opacity="0.8" pointer-events="none"/>`;
     s += `<text ${tx(cx)} y="${MID - sz / 2 - 8}" text-anchor="middle" font-size="16" font-weight="bold" fill="#ffd23f" pointer-events="none">${G.offer.by === 'h' ? 'あなたのダブル' : 'ダブル!'}</text>`;
     s += `<rect x="${cx - sz / 2}" y="${MID - sz / 2}" width="${sz}" height="${sz}" rx="10" fill="#f7f3e8" stroke="#ffd23f" stroke-width="4" pointer-events="none"/>`;
-    s += `<text ${tx(cx)} y="${MID + 17}" text-anchor="middle" font-size="${G.offer.value >= 10 ? 40 : 48}" font-weight="bold" fill="#222" pointer-events="none">${G.offer.value}</text>`;
+    s += `<text ${tx(cx)} y="${MID + 20}" text-anchor="middle" font-size="${G.offer.value >= 10 ? 48 : 58}" font-weight="bold" fill="#222" pointer-events="none">${G.offer.value}</text>`;
     if (G.phase === 'humanTake') {
       s += `<text ${tx(cx)} y="${MID + sz / 2 + 2 + 14}" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff6dc" pointer-events="none">タップでテイク</text>`;
     }
@@ -867,12 +870,12 @@ function render() {
   s += okArea;
   // ダブルされたとき:真ん中の大きなキューブをタップでテイク
   if (G.phase === 'humanTake' && G.offer) {
-    s += `<rect class="pt" data-act="take" x="${BX + BW / 2 - 72}" y="${MID - 72}" width="144" height="144" fill="transparent"/>`;
+    s += `<rect class="pt" data-act="take" x="${BX + BW / 2 - 80}" y="${MID - 80}" width="160" height="160" fill="transparent"/>`;
   }
   // キューブ(ダブルできるときはタップでダブル)
   if (G.phase === 'humanRoll' && canDouble('h') && !G.offer) {
-    const cy = G.cube.owner === 'h' ? BOT - 24 : G.cube.owner === 'c' ? TOP + 24 : MID;
-    s += `<rect class="pt" data-act="double" x="${BX + BW / 2 - 22}" y="${cy - 22}" width="44" height="44" rx="7" fill="transparent" stroke="#ffd23f" stroke-width="3" stroke-dasharray="5 3"/>`;
+    const cs = cubeSize(), cy = G.cube.owner === 'h' ? BOT - cs / 2 - 4 : G.cube.owner === 'c' ? TOP + cs / 2 + 4 : MID;
+    s += `<rect class="pt" data-act="double" x="${BX + BW / 2 - cs / 2 - 3}" y="${cy - cs / 2 - 3}" width="${cs + 6}" height="${cs + 6}" rx="8" fill="transparent" stroke="#ffd23f" stroke-width="3" stroke-dasharray="5 3"/>`;
   }
   svg.innerHTML = M.flip ? `<g transform="translate(${TOTAL},0) scale(-1,1)">${s}</g>` : s;
 
