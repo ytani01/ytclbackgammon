@@ -6,11 +6,12 @@
 <title>バックギャモン</title>
 <style>
   :root { --bg:#2b3a2e; --panel:#1f2a22; --text:#f2efe6; --accent:#e0b04a; color-scheme: dark; }
-  button:focus-visible, select:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
   * { box-sizing: border-box; }
   body { margin:0; background:var(--bg); color:var(--text); font-family: "Hiragino Sans","Noto Sans JP","Yu Gothic",sans-serif; }
   #app { max-width: 1600px; margin: 0 auto; padding: 4px 6px 24px; }
   h1 { font-size: 1.1rem; margin: 0; letter-spacing: .1em; }
+
+  /* スコア・マッチ情報 */
   #top { display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:0 8px; }
   #score { display:flex; align-items:center; gap:6px; background: var(--panel); border-radius: 8px; padding: 2px 10px; line-height: 1.15; }
   #score b { color: var(--accent); font-size: 1.7rem; font-variant-numeric: tabular-nums; min-width: .7em; text-align: center; }
@@ -19,47 +20,44 @@
   #score #target { font-size: .78rem; opacity: .8; margin-left: 4px; white-space: nowrap; }
   #sub { display:flex; justify-content:space-between; flex-wrap:wrap; gap:0 12px; font-size: .8rem; opacity: .9; }
   #matchinfo { color: var(--accent); }
-  #pipbox { display:flex; gap:10px; align-items:center; }
   #pipToggle { cursor:pointer; white-space:nowrap; }
   #chkPips { accent-color: var(--accent); vertical-align: middle; }
-  #setupNote { font-size: .85rem; opacity: .75; }
-  #setup { margin-top: 12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-  select { font-size: 1rem; padding: 8px; border-radius: 6px; font-family: inherit; margin-left: 6px; }
-  button.dbl { background: #f7f3e8; }
+
   /* 盤は幅いっぱい。ただし PC では下の操作ボタンまで 1 画面に収まる高さに抑える */
-  svg { width: min(100%, calc((100vh - 170px) * 1.3086)); min-width: min(100%, 320px); height: auto; margin: 0 auto; display:block; user-select:none; -webkit-user-select:none; touch-action: manipulation; }
+  #board { width: min(100%, calc((100vh - 170px) * 1.3086)); min-width: min(100%, 320px); height: auto; margin: 0 auto; display:block; user-select:none; -webkit-user-select:none; touch-action: manipulation; }
+  .pt { cursor: pointer; }
+
+  /* メッセージ・ボタン */
   #msg { min-height: 2.8em; margin: 4px 0; padding: 6px 10px; background: var(--panel); border-radius: 8px; line-height: 1.4; }
   #controls { display:flex; gap:6px; flex-wrap:wrap; }
   button { font-size: 1rem; padding: 9px 16px; border-radius: 8px; border: none; cursor: pointer; background: var(--accent); color: #222; font-weight: bold; font-family: inherit; }
   button:disabled { background: #555; color: #999; cursor: default; }
   button.sub { background: #d9d4c4; }
   button.sub:disabled { background: #555; }
+  button:focus-visible, select:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  /* 設定・遊び方 */
+  #setup { margin-top: 12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  #setupNote { font-size: .85rem; opacity: .75; }
+  select { font-size: 1rem; padding: 8px; border-radius: 6px; font-family: inherit; margin-left: 6px; }
   details { margin-top: 16px; background: var(--panel); padding: 8px 12px; border-radius: 8px; font-size: .92rem; line-height: 1.6; }
   summary { cursor: pointer; font-weight: bold; }
-  .pt { cursor: pointer; }
+
   /* スマホの横画面(高さが低い): 盤を左に高さいっぱい、スコア・メッセージ・ボタンを右の列へ */
   @media (orientation: landscape) and (max-height: 520px) {
-    #app { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 8px; align-items: start; padding: 2px 6px 16px; max-width: none; }
-    #app { grid-template-columns: auto minmax(120px, 1fr); }
+    #app { display: grid; grid-template-columns: auto minmax(120px, 1fr); column-gap: 8px; align-items: start; padding: 2px 6px 16px; max-width: none; }
     #board { grid-column: 1; grid-row: 1 / span 4; width: calc((100vh - 6px) * var(--aspect, 1.3086)); width: calc((100dvh - 6px) * var(--aspect, 1.3086)); max-width: calc(100vw - 134px); min-width: 0; margin: 0; }
     #top, #sub, #msg, #controls { grid-column: 2; min-width: 0; }
-    #top { grid-row: 1; flex-direction: column; align-items: flex-start; }
+    #setup, details { grid-column: 1 / -1; }
     h1 { display: none; }
-    #score { flex-wrap: wrap; padding: 2px 8px; }
-    #score b { font-size: 1.5rem; }
-    #score .who { font-size: .8rem; }
-    #sub { grid-row: 2; flex-direction: column; gap: 2px; }
-    #pipbox { flex-wrap: wrap; gap: 2px 8px; }
-    #msg { grid-row: 3; font-size: .85rem; min-height: 0; }
-    #controls { grid-row: 4; }
-    #controls { gap: 4px; }
-    #controls button { flex: 1 1 calc(50% - 4px); padding: 7px 4px; font-size: .8rem; }
-    #msg { font-size: .78rem; padding: 4px 6px; }
-    #score { gap: 3px; padding: 2px 6px; }
+    #top { grid-row: 1; flex-direction: column; align-items: flex-start; }
+    #score { flex-wrap: wrap; gap: 3px; padding: 2px 6px; }
     #score b { font-size: 1.3rem; }
     #score .who { font-size: .72rem; }
-    #sub { font-size: .72rem; }
-    #setup, details { grid-column: 1 / -1; }
+    #sub { grid-row: 2; flex-direction: column; gap: 2px; font-size: .72rem; }
+    #msg { grid-row: 3; min-height: 0; font-size: .78rem; padding: 4px 6px; }
+    #controls { grid-row: 4; gap: 4px; }
+    #controls button { flex: 1 1 calc(50% - 4px); padding: 7px 4px; font-size: .8rem; }
   }
 </style>
 </head>
@@ -69,15 +67,13 @@
     <h1>バックギャモン</h1>
     <div id="score"><span class="who">あなた</span><b id="sh">0</b><span class="dash">−</span><b id="sc">0</b><span class="who">コンピューター</span><span id="target"></span></div>
   </div>
-  <div id="sub"><span id="matchinfo"></span><span id="pipbox"><span id="pips"></span><label id="pipToggle"><input type="checkbox" id="chkPips" checked> ピップ数を表示</label></span></div>
+  <div id="sub"><span id="matchinfo"></span><label id="pipToggle"><input type="checkbox" id="chkPips" checked> ピップ数を表示</label></div>
   <svg id="board" viewBox="6 2 704 538"></svg>
   <div id="msg"></div>
+  <!-- ダイスを振る・ダブル・テイク・確定は盤の上のタップでもできる -->
   <div id="controls">
-    <button id="btnDouble" class="dbl">ダブル</button>
-    <button id="btnRoll" title="Enter">ダイスを振る</button>
     <button id="btnUndo" class="sub" title="Backspace">戻す</button>
     <button id="btnOk" title="Enter">確定</button>
-    <button id="btnTake">テイク</button>
     <button id="btnPass" class="sub">パス</button>
     <button id="btnNext">次のゲーム</button>
     <button id="btnResign" class="sub">投了</button>
@@ -131,11 +127,14 @@
 </div>
 <script>
 // ==LOGIC START==
+// ルールとコンピューターの思考。画面には触れない(node のテストからも読み込める)。
 // 各プレイヤーは自分から見た番号で駒を持つ: a[1..24] = ポイント, a[25] = バー, a[0] = 上がった駒。
 // 番号の小さいほうへ進む。相手の自分ポイント p は相手の番号では 25-p。
 const BG = (() => {
+  const BAR = 25, OFF = 0;
   const other = p => (p === 'h' ? 'c' : 'h');
 
+  // ---------- ルール ----------
   function initial() {
     const a = () => { const x = new Array(26).fill(0); x[24] = 2; x[13] = 5; x[8] = 3; x[6] = 5; return x; };
     return { h: a(), c: a() };
@@ -143,31 +142,35 @@ const BG = (() => {
 
   function clone(s) { return { h: s.h.slice(), c: s.c.slice() }; }
 
-  function canBearOff(me) {
-    for (let i = 7; i <= 25; i++) if (me[i]) return false;
+  const posKey = s => s.h.join(',') + '|' + s.c.join(',');
+
+  // ゾロ目は同じ目を 4 回使う
+  const diceList = dice => (dice[0] === dice[1] ? [dice[0], dice[0], dice[0], dice[0]] : [dice[0], dice[1]]);
+
+  // 7 より奥(バーを含む)に駒がなければベアオフできる
+  function allHome(me) {
+    for (let i = 7; i <= BAR; i++) if (me[i]) return false;
     return true;
   }
 
   function singleMoves(s, pl, d) {
     const me = s[pl], op = s[other(pl)], res = [];
-    if (me[25] > 0) {
+    if (me[BAR] > 0) {
       const to = 25 - d;
-      if (op[25 - to] < 2) res.push({ from: 25, to, die: d });
+      if (op[25 - to] < 2) res.push({ from: BAR, to, die: d });
       return res;
     }
-    const bear = canBearOff(me);
+    const bear = allHome(me);
     for (let f = 24; f >= 1; f--) {
       if (!me[f]) continue;
       const to = f - d;
       if (to >= 1) {
         if (op[25 - to] < 2) res.push({ from: f, to, die: d });
       } else if (bear) {
-        if (to === 0) res.push({ from: f, to: 0, die: d });
-        else {
-          let higher = false;
-          for (let i = f + 1; i <= 6; i++) if (me[i]) { higher = true; break; }
-          if (!higher) res.push({ from: f, to: 0, die: d });
-        }
+        // ちょうどの目なら上がれる。大きすぎる目は、それより奥に駒がないときだけ
+        let higher = false;
+        if (to < 0) for (let i = f + 1; i <= 6; i++) if (me[i]) { higher = true; break; }
+        if (!higher) res.push({ from: f, to: OFF, die: d });
       }
     }
     return res;
@@ -177,13 +180,12 @@ const BG = (() => {
     const n = clone(s), me = n[pl], op = n[other(pl)];
     me[m.from]--; me[m.to]++;
     let hit = false;
-    if (m.to >= 1 && op[25 - m.to] === 1) { op[25 - m.to] = 0; op[25]++; hit = true; }
+    if (m.to >= 1 && op[25 - m.to] === 1) { op[25 - m.to] = 0; op[BAR]++; hit = true; }
     return { state: n, move: { from: m.from, to: m.to, die: m.die, hit } };
   }
 
   // 合法な手順(最大数のダイスを使うもの)をすべて返す
   function legalSequences(s, pl, dice) {
-    const dlist = dice[0] === dice[1] ? [dice[0], dice[0], dice[0], dice[0]] : [dice[0], dice[1]];
     const out = [];
     (function rec(st, remaining, moves) {
       let any = false;
@@ -200,10 +202,11 @@ const BG = (() => {
         }
       }
       if (!any) out.push({ moves, state: st });
-    })(clone(s), dlist, []);
+    })(clone(s), diceList(dice), []);
     let max = 0;
     for (const q of out) max = Math.max(max, q.moves.length);
     let seqs = out.filter(q => q.moves.length === max);
+    // 片方の目しか使えないときは、大きい目を使える限り大きい目
     if (max === 1 && dice[0] !== dice[1]) {
       const big = Math.max(dice[0], dice[1]);
       if (seqs.some(q => q.moves[0].die === big)) seqs = seqs.filter(q => q.moves[0].die === big);
@@ -211,8 +214,24 @@ const BG = (() => {
     return seqs;
   }
 
-  function pip(a) { let t = 0; for (let p = 1; p <= 25; p++) t += p * a[p]; return t; }
+  function pip(a) { let t = 0; for (let p = 1; p <= BAR; p++) t += p * a[p]; return t; }
 
+  // 負けた側の駒 loser から見た、負けの種類と点数(キューブ倍の前)
+  function lossValue(loser) {
+    if (loser[OFF] > 0) return { points: 1, kind: 'シングル' };
+    let back = loser[BAR] > 0;
+    for (let p = 19; p <= 24; p++) if (loser[p]) back = true;
+    return back ? { points: 3, kind: 'バックギャモン' } : { points: 2, kind: 'ギャモン' };
+  }
+
+  function result(s) {
+    for (const w of ['h', 'c']) {
+      if (s[w][OFF] === 15) return { winner: w, ...lossValue(s[other(w)]) };
+    }
+    return null;
+  }
+
+  // ---------- コンピューターの思考 ----------
   // 相手の駒(自分の番号で x)から見た距離の一覧に対し、36 通り中何通りで当たるか
   function shotsAt(dists) {
     if (!dists.length) return 0;
@@ -232,11 +251,11 @@ const BG = (() => {
     const me = s[pl], op = s[other(pl)];
     let e = pip(op) - pip(me);
     let myBack = 0;
-    for (let p = 25; p >= 1; p--) if (me[p]) { myBack = p; break; }
+    for (let p = BAR; p >= 1; p--) if (me[p]) { myBack = p; break; }
     const oppXs = [];
-    for (let q = 1; q <= 25; q++) if (op[q]) oppXs.push(25 - q);
+    for (let q = 1; q <= BAR; q++) if (op[q]) oppXs.push(25 - q);
     const contact = oppXs.length > 0 && Math.min(...oppXs) < myBack;
-    e += me[0] * 3;
+    e += me[OFF] * 3;
     if (!contact) {
       for (let p = 7; p <= 24; p++) e -= me[p] * 0.5; // 早く家に入れる
       return e;
@@ -245,8 +264,7 @@ const BG = (() => {
     for (let p = 1; p <= 24; p++) {
       if (me[p] !== 1) continue;
       const dists = oppXs.filter(x => x < p).map(x => p - x);
-      const shots = shotsAt(dists);
-      e -= (shots / 36) * (25 - p + 8);
+      e -= (shotsAt(dists) / 36) * (25 - p + 8);
     }
     // 作ったポイント
     let run = 0, best = 0;
@@ -263,10 +281,10 @@ const BG = (() => {
     }
     e += PRIME_W[Math.min(best, 6)];
     // 相手がバーにいるときは、自分のインナーボードが固いほど良い
-    if (op[25] > 0) {
+    if (op[BAR] > 0) {
       let closed = 0;
       for (let p = 1; p <= 6; p++) if (me[p] >= 2) closed++;
-      e += op[25] * (3 + closed * 1.5);
+      e += op[BAR] * (3 + closed * 1.5);
     }
     return e;
   }
@@ -275,14 +293,11 @@ const BG = (() => {
   // 相手が上がりに近いほど重く、ブレ(noise)より十分大きくして必ず優先させる。
   function lossDanger(s, pl) {
     const me = s[pl], op = s[other(pl)];
-    if (me[0] > 0) return 0;
-    let opHome = true;
-    for (let i = 7; i <= 25; i++) if (op[i]) { opHome = false; break; }
-    const opPip = pip(op);
-    const f = Math.min(1, Math.max(0, (90 - opPip) / 60)) + (opHome ? 0.5 : 0);
+    if (me[OFF] > 0) return 0;
+    const f = Math.min(1, Math.max(0, (90 - pip(op)) / 60)) + (allHome(op) ? 0.5 : 0);
     if (f <= 0) return 0;
     let d = 0;
-    for (let p = 7; p <= 25; p++) {
+    for (let p = 7; p <= BAR; p++) {
       if (!me[p]) continue;
       d += me[p] * (p - 6) * 1.5;                      // 家に入っていない駒(ギャモン)
       if (p >= 19) d += me[p] * (40 + (p - 18) * 4);    // 相手のインナーボードやバーの駒(バックギャモン)
@@ -291,16 +306,46 @@ const BG = (() => {
     return d * f;
   }
 
-  // コンピューターの手を選ぶ。noise で少しブレさせて強くなりすぎないようにする
+  const moveScore = (st, pl) => evaluate(st, pl) - lossDanger(st, pl);
+
+  // 初級・中級: 1 手先だけを評価する。noise で少しブレさせて強くなりすぎないようにする
   function chooseMove(s, pl, dice, noise = 5, rnd = Math.random) {
-    const seqs = legalSequences(s, pl, dice);
     let best = null, bestV = -Infinity;
     const cache = new Map();
-    for (const q of seqs) {
-      const key = q.state.h.join(',') + '|' + q.state.c.join(',');
+    for (const q of legalSequences(s, pl, dice)) {
+      const key = posKey(q.state);
       let v = cache.get(key);
-      if (v === undefined) { v = evaluate(q.state, pl) - lossDanger(q.state, pl) + rnd() * noise; cache.set(key, v); }
+      if (v === undefined) { v = moveScore(q.state, pl) + rnd() * noise; cache.set(key, v); }
       if (v > bestV) { bestV = v; best = q; }
+    }
+    return best;
+  }
+
+  // 上級: 1 手先の候補上位を、相手の 21 通りの目への最善応手まで読んで比べる
+  function chooseMoveDeep(s, pl, dice, top = 6) {
+    const op = other(pl);
+    const seen = new Map();
+    for (const q of legalSequences(s, pl, dice)) {
+      const key = posKey(q.state);
+      if (!seen.has(key)) seen.set(key, { q, v: moveScore(q.state, pl) });
+    }
+    const cands = [...seen.values()].sort((a, b) => b.v - a.v).slice(0, top);
+    if (cands.length === 1) return cands[0].q;
+    let best = null, bestV = -Infinity;
+    for (const c of cands) {
+      if (c.q.state[pl][OFF] === 15) return c.q; // 勝ちが決まる手
+      let total = 0;
+      for (let a = 1; a <= 6; a++) for (let b = a; b <= 6; b++) {
+        let reply = null, rv = -Infinity;
+        for (const r of legalSequences(c.q.state, op, [a, b])) {
+          const v = moveScore(r.state, op);
+          if (v > rv) { rv = v; reply = r; }
+        }
+        const st = reply.state;
+        total += (a === b ? 1 : 2) * (st[op][OFF] === 15 ? -200 : moveScore(st, pl));
+      }
+      const v = total / 36;
+      if (v > bestV) { bestV = v; best = c.q; }
     }
     return best;
   }
@@ -312,62 +357,14 @@ const BG = (() => {
     return 1 / (1 + Math.exp(-x / (0.08 * avg + 2)));
   }
 
-  function result(s) {
-    for (const w of ['h', 'c']) {
-      if (s[w][0] === 15) {
-        const l = s[other(w)];
-        let points = 1, kind = 'シングル';
-        if (l[0] === 0) {
-          points = 2; kind = 'ギャモン';
-          let back = l[25] > 0;
-          for (let p = 19; p <= 24; p++) if (l[p]) back = true;
-          if (back) { points = 3; kind = 'バックギャモン'; }
-        }
-        return { winner: w, points, kind };
-      }
-    }
-    return null;
-  }
-
-  const moveScore = (st, pl) => evaluate(st, pl) - lossDanger(st, pl);
-
-  // 上級用: 1 手先の候補上位を、相手の 21 通りの目への最善応手まで読んで比べる
-  function chooseMoveDeep(s, pl, dice, top = 6) {
-    const op = other(pl);
-    const seen = new Map();
-    for (const q of legalSequences(s, pl, dice)) {
-      const key = q.state.h.join(',') + '|' + q.state.c.join(',');
-      if (!seen.has(key)) seen.set(key, { q, v: moveScore(q.state, pl) });
-    }
-    const cands = [...seen.values()].sort((a, b) => b.v - a.v).slice(0, top);
-    if (cands.length <= 1) return cands.length ? cands[0].q : legalSequences(s, pl, dice)[0];
-    let best = null, bestV = -Infinity;
-    for (const c of cands) {
-      if (c.q.state[pl][0] === 15) return c.q; // 勝ちが決まる手
-      let total = 0;
-      for (let a = 1; a <= 6; a++) for (let b = a; b <= 6; b++) {
-        const w = a === b ? 1 : 2;
-        let reply = null, rv = -Infinity;
-        for (const r of legalSequences(c.q.state, op, [a, b])) {
-          const v = moveScore(r.state, op);
-          if (v > rv) { rv = v; reply = r; }
-        }
-        const st = reply.state;
-        total += w * (st[op][0] === 15 ? -200 : moveScore(st, pl));
-      }
-      const v = total / 36;
-      if (v > bestV) { bestV = v; best = c.q; }
-    }
-    return best;
-  }
-
-  return { initial, clone, other, singleMoves, applyMove, legalSequences, pip, evaluate, chooseMove, chooseMoveDeep, winProb, result };
+  return { BAR, OFF, initial, clone, other, diceList, singleMoves, applyMove, legalSequences, pip, lossValue, result, evaluate, chooseMove, chooseMoveDeep, winProb };
 })();
 // ==LOGIC END==
 
-// ---------- 画面 ----------
-const svg = document.getElementById('board');
+// ================= 設定と状態 =================
 const $ = id => document.getElementById(id);
+const svg = $('board');
+
 // ダイス: 暗号用の乱数(crypto.getRandomValues)から偏りなく 1〜6 を作る。使えない環境では Math.random
 const rnd = (() => {
   const buf = new Uint8Array(1);
@@ -378,44 +375,83 @@ const rnd = (() => {
     return 1 + (buf[0] % 6);
   };
 })();
-const TOP = 30, BOT = 510, MID = 270;
-// 盤の横幅はポイント幅 W で決まる(通常 46)。スマホ横画面では画面の形に合わせて W を広げる
-// キューブの一辺(バーの幅に収まる範囲で大きく)
-function cubeSize() { return Math.min(BW - 2, 60); }
-let W = 46, R = 21, BW = 44, BX, RX, RE, TX0, TC, TOTAL, LC, RC;
-const LANDSCAPE = '(orientation: landscape) and (max-height: 520px)';
-function layout() {
-  W = 46; R = 21; BW = 44;
-  if (window.matchMedia && matchMedia(LANDSCAPE).matches) {
-    // ポイントが広がった分だけ駒も大きくし、バーも駒が入る幅にする
-    const vbw = (innerWidth - 150) / (innerHeight - 6) * 538;
-    for (let k = 0; k < 2; k++) {
-      W = Math.max(46, Math.min(90, Math.floor((vbw - 108 - BW) / 12)));
-      R = Math.max(21, Math.min(36, Math.floor(W / 2) - 1));
-      BW = Math.max(44, 2 * R + 4);
-    }
-  }
-  BX = 20 + 6 * W; RX = BX + BW; RE = RX + 6 * W; TX0 = RE + 20; TC = TX0 + 36; TOTAL = TX0 + 80;
-  LC = 20 + 3 * W; RC = RX + 3 * W;
-  svg.setAttribute('viewBox', `6 2 ${TOTAL - 12} 538`);
-  svg.style.setProperty('--aspect', ((TOTAL - 12) / 538).toFixed(4));
-}
+const roll2 = () => [rnd(), rnd()];
+
 // コンピューターの強さ。noise は手の評価に足すブレ、cubeNoise はダブル判断のブレ
 const LEVELS = {
   easy: { name: '初級', noise: 25, cubeNoise: 0.2, deep: false },
   normal: { name: '中級', noise: 5, cubeNoise: 0.06, deep: false },
   hard: { name: '上級', noise: 0, cubeNoise: 0, deep: true },
 };
+
+// 待ち時間(ミリ秒)
+const DELAY = { openingShow: 1200, cpuThink: 900, cpuStep: 600, cpuNoMove: 1400, humanNoMove: 1800, cpuDecide: 1300, confirmTap: 4000 };
+
+// マッチ全体の状態
 const M = { level: 'normal', flip: false, len: 5, score: { h: 0, c: 0 }, crawfordDone: false, over: false };
+// 1 ゲームの状態。phase は次のどれか:
+//   opening(先手決めのダイス待ち)/ openingShow(先手決めの目を表示中)
+//   humanRoll / humanMove / humanNoMove(あなたの番)/ humanTake(ダブルされて返事待ち)
+//   cpu / cpuDecide(コンピューターの番・ダブルへの返事を考え中)/ over(ゲーム終了)
 let G;
 
+const HUMAN_PHASES = ['humanRoll', 'humanMove', 'humanNoMove', 'humanTake'];
+const canRoll = () => G.phase === 'opening' || G.phase === 'humanRoll';
+const allPlayed = () => G.phase === 'humanMove' && G.steps.length === 0;
+
+// 待ち時間のあとで fn を呼ぶ。その間に新しいゲームが始まっていたら何もしない
+function later(ms, fn) {
+  const g = G;
+  setTimeout(() => { if (g === G) fn(); }, ms);
+}
+
+function setMsg(t) { $('msg').innerHTML = t; }
+
+// ================= 盤の寸法 =================
+// 縦方向は固定。横幅はポイント幅 W で決まる(通常 46)。スマホ横画面では画面の形に合わせて W を広げる
+const TOP = 30, BOT = 510, MID = 270, VIEW_H = 538;
+const EDGE = 20, TRAY_W = 72, POINT_H = 200;
+const LANDSCAPE = '(orientation: landscape) and (max-height: 520px)';
+// W: ポイント幅, R: 駒の半径, BW: バーの幅, BX: バーの左端, RX: 右半分の左端, RE: 右半分の右端,
+// TX0: トレイの左端, TC: トレイの中心, TOTAL: 全体の幅, LC / RC: 左右の半分の中心
+let W = 46, R = 21, BW = 44, BX, RX, RE, TX0, TC, TOTAL, LC, RC;
+
+function layout() {
+  W = 46; R = 21; BW = 44;
+  if (window.matchMedia && matchMedia(LANDSCAPE).matches) {
+    // ポイントが広がった分だけ駒も大きくし、バーも駒が入る幅にする
+    const vbw = (innerWidth - 150) / (innerHeight - 6) * VIEW_H;
+    for (let k = 0; k < 2; k++) {
+      W = Math.max(46, Math.min(90, Math.floor((vbw - 108 - BW) / 12)));
+      R = Math.max(21, Math.min(36, Math.floor(W / 2) - 1));
+      BW = Math.max(44, 2 * R + 4);
+    }
+  }
+  BX = EDGE + 6 * W; RX = BX + BW; RE = RX + 6 * W; TX0 = RE + 20; TC = TX0 + 36; TOTAL = TX0 + 80;
+  LC = EDGE + 3 * W; RC = RX + 3 * W;
+  svg.setAttribute('viewBox', `6 2 ${TOTAL - 12} ${VIEW_H}`);
+  svg.style.setProperty('--aspect', ((TOTAL - 12) / VIEW_H).toFixed(4));
+}
+
+// ポイント p(あなたから見た番号)の左端
 function colX(p) {
   if (p <= 6) return RX + (6 - p) * W;
-  if (p <= 12) return 20 + (12 - p) * W;
-  if (p <= 18) return 20 + (p - 13) * W;
+  if (p <= 12) return EDGE + (12 - p) * W;
+  if (p <= 18) return EDGE + (p - 13) * W;
   return RX + (p - 19) * W;
 }
 
+// pl のダイスを置く半分の中心。あなたのダイスは盤の向きに関係なく画面の右側
+const diceX = pl => ((pl === 'h') !== M.flip ? RC : LC);
+
+// キューブの一辺(バーの幅に収まる範囲で大きく)と、持ち主の側に寄せた中心の高さ
+const cubeSize = () => Math.min(BW - 2, 60);
+function cubeY() {
+  const cs = cubeSize();
+  return G.cube.owner === 'h' ? BOT - cs / 2 - 4 : G.cube.owner === 'c' ? TOP + cs / 2 + 4 : MID;
+}
+
+// ================= マッチとゲームの進行 =================
 function newMatch() {
   M.len = +$('selLen').value;
   M.flip = $('selDir').value === 'left';
@@ -428,24 +464,210 @@ function newGame() {
   // 先に (マッチの長さ − 1) 点に達した直後の 1 ゲームだけがクロフォードゲーム
   const crawford = !M.crawfordDone && M.len > 1 && (M.score.h === M.len - 1 || M.score.c === M.len - 1);
   if (crawford) M.crawfordDone = true;
-  G = { state: BG.initial(), phase: 'opening', dice: null, openDice: null, legal: [], played: [], turnStart: null, sel: null, steps: [], cube: { value: 1, owner: null }, crawford };
+  G = {
+    state: BG.initial(), phase: 'opening', crawford,
+    cube: { value: 1, owner: null }, offer: null,  // offer: 申し込み中のダブル { value, by }
+    dice: null, openDice: null,                    // openDice: 先手決めの目 { h, c }
+    legal: [], played: [], turnStart: null,        // あなたの番: 合法手順・動かした手・番の始めの局面
+    steps: [], sel: null,                          // 次に動かせる 1 手の一覧・選んだ駒
+    lastCpu: null,                                 // 直前のコンピューターの手(表示用)
+  };
   setMsg((crawford ? '<b>このゲームはクロフォードゲームです(どちらもダブルできません)。</b><br>' : '') + '右側のダイスカップをタップして先手を決めます。目の大きいほうが先手です。');
   render();
 }
 
-function setMsg(t) { $('msg').innerHTML = t; }
-
 // 手を表示用の番号で書く(番号はあなたから見たもの)
 function notation(moves, pl) {
-  const name = (p) => {
-    if (p === 25) return 'バー';
-    if (p === 0) return '上がり';
-    return String(pl === 'h' ? p : 25 - p);
-  };
+  const name = p => (p === BG.BAR ? 'バー' : p === BG.OFF ? '上がり' : String(pl === 'h' ? p : 25 - p));
   return moves.map(m => name(m.from) + '→' + name(m.to) + (m.hit ? '(ヒット)' : '')).join('、');
 }
 
+function onRoll() {
+  if (G.phase === 'opening') rollOpening();
+  else if (G.phase === 'humanRoll') startHumanTurn(roll2());
+}
+
+// 先手決め: 1 個ずつ振り、大きいほうがその 2 つの目で始める
+function rollOpening() {
+  const h = rnd(), c = rnd();
+  G.openDice = { h, c };
+  const shown = `あなた ${h}、コンピューター ${c}。`;
+  if (h === c) {
+    setMsg(shown + '同じ目なのでもう一度振ってください。');
+    render();
+  } else if (h > c) {
+    // 両方の目を少し見せてから、あなたの手番に入る
+    G.phase = 'openingShow';
+    setMsg(shown + 'あなたが先手です。');
+    render();
+    later(DELAY.openingShow, () => startHumanTurn([h, c], shown + 'あなたが先手です。'));
+  } else {
+    setMsg(shown + 'コンピューターが先手です。');
+    G.phase = 'cpu';
+    render();
+    later(DELAY.openingShow, () => cpuRoll([c, h]));
+  }
+}
+
+// ---------- あなたの番 ----------
+function startHumanTurn(dice, prefix) {
+  G.openDice = null;
+  G.dice = dice;
+  G.legal = BG.legalSequences(G.state, 'h', dice);
+  G.played = []; G.turnStart = BG.clone(G.state); G.sel = null;
+  const pre = prefix ? prefix + '<br>' : '';
+  if (G.legal[0].moves.length === 0) {
+    G.phase = 'humanNoMove'; G.steps = [];
+    setMsg(pre + `ダイス ${dice[0]}・${dice[1]}:動かせる手がありません。コンピューターの番になります。`);
+    render();
+    later(DELAY.humanNoMove, cpuTurn);
+    return;
+  }
+  G.phase = 'humanMove';
+  computeSteps();
+  setMsg(pre + `ダイス ${dice[0]}・${dice[1]}:動かす駒をクリックし、緑の行き先をクリックしてください。`);
+  render();
+}
+
+// 合法手順 q が、ここまでに動かした手で始まり、まだ続きがあるか
+function continuesPlayed(q) {
+  const k = G.played.length;
+  if (q.moves.length <= k) return false;
+  for (let i = 0; i < k; i++) {
+    const a = q.moves[i], b = G.played[i];
+    if (a.from !== b.from || a.to !== b.to || a.die !== b.die) return false;
+  }
+  return true;
+}
+
+// 次に動かせる 1 手の一覧。動かせる駒が 1 か所だけならそれを選んでおく
+function computeSteps() {
+  const k = G.played.length, res = [], seen = new Set();
+  for (const q of G.legal) {
+    if (!continuesPlayed(q)) continue;
+    const m = q.moves[k], key = m.from + '-' + m.to + '-' + m.die;
+    if (!seen.has(key)) { seen.add(key); res.push(m); }
+  }
+  G.steps = res;
+  const froms = [...new Set(res.map(m => m.from))];
+  G.sel = froms.length === 1 ? froms[0] : null;
+}
+
+// 選んだ駒の行き先 → そこへ行く手順(1 つの目でも、目を続けて使っても良い)。短い手順を優先
+function pathsFrom(from) {
+  const k = G.played.length, res = new Map();
+  if (from === null) return res;
+  for (const q of G.legal) {
+    if (!continuesPlayed(q) || q.moves[k].from !== from) continue;
+    const path = [];
+    for (let j = k; j < q.moves.length; j++) {
+      const m = q.moves[j];
+      if (path.length && (m.from !== path[path.length - 1].to || m.from === BG.OFF)) break;
+      path.push(m);
+      const old = res.get(m.to);
+      if (!old || path.length < old.length || (path.length === old.length && path[0].die < old[0].die)) res.set(m.to, path.slice());
+    }
+  }
+  return res;
+}
+
+function doPath(path) {
+  for (const m of path) {
+    G.state = BG.applyMove(G.state, 'h', m).state;
+    G.played.push(m);
+  }
+  computeSteps();
+  if (G.steps.length === 0) setMsg('動かし終わりました。ダイスをタップするか「確定」で手番を終えます(「戻す」でやり直し)。');
+  render();
+}
+
+// 盤のポイント(バー = 25、トレイ = 0)をタップしたとき
+function onPoint(pt) {
+  if (G.sel !== null) {
+    const path = pathsFrom(G.sel).get(pt);
+    if (path) { doPath(path); return; }
+  }
+  if (G.steps.some(m => m.from === pt)) {
+    // 行き先が 1 か所しかなければ、選んだ時点で動かす
+    const paths = pathsFrom(pt);
+    if (paths.size === 1) { doPath([...paths.values()][0]); return; }
+    G.sel = pt; render(); return;
+  }
+  if (new Set(G.steps.map(m => m.from)).size > 1) { G.sel = null; render(); }
+}
+
+function onUndo() {
+  if (G.phase !== 'humanMove' || !G.played.length) return;
+  G.state = BG.clone(G.turnStart); G.played = [];
+  computeSteps();
+  setMsg(`ダイス ${G.dice[0]}・${G.dice[1]}:動かす駒をクリックしてください。`);
+  render();
+}
+
+function onOk() {
+  if (!allPlayed()) return;
+  if (checkWin()) return;
+  cpuTurn();
+}
+
+// ---------- コンピューターの番 ----------
+// 手番の始まり:まずダブルするかどうか
+function cpuTurn() {
+  G.sel = null; G.steps = []; G.openDice = null; G.played = []; G.dice = null;
+  if (cpuWantsDouble()) {
+    const v = G.cube.value;
+    G.phase = 'humanTake';
+    G.offer = { value: v * 2, by: 'c' };
+    setMsg(`<b>コンピューターがダブルしてきました(キューブ ${v} → ${v * 2})。</b><br><b>キューブをタップでテイク</b>(このゲームは ${v * 2} 点以上に)。「パス」を押すとここで ${v} 点を失います。`);
+    render();
+    return;
+  }
+  cpuRoll();
+}
+
+// ダイスを振って(先手決めのときは dice が決まっている)、1 手ずつ見せながら動かす
+function cpuRoll(dice) {
+  G.phase = 'cpu'; G.sel = null; G.steps = []; G.openDice = null;
+  G.dice = dice || roll2();
+  G.played = [];
+  setMsg(`コンピューターの番:ダイス ${G.dice[0]}・${G.dice[1]}`);
+  render();
+  later(DELAY.cpuThink, () => {
+    const L = LEVELS[M.level];
+    const seq = L.deep ? BG.chooseMoveDeep(G.state, 'c', G.dice) : BG.chooseMove(G.state, 'c', G.dice, L.noise);
+    if (!seq || !seq.moves.length) {
+      setMsg(`コンピューター:ダイス ${G.dice[0]}・${G.dice[1]}、動かせる手がありません。`);
+      later(DELAY.cpuNoMove, endCpu);
+      return;
+    }
+    let i = 0;
+    const step = () => {
+      if (i < seq.moves.length) {
+        const r = BG.applyMove(G.state, 'c', seq.moves[i++]);
+        G.state = r.state; G.played.push(r.move);
+        render();
+        later(DELAY.cpuStep, step);
+      } else {
+        G.lastCpu = `コンピューター(${G.dice[0]}・${G.dice[1]}):${notation(G.played, 'c')}`;
+        if (checkWin()) return;
+        endCpu();
+      }
+    };
+    step();
+  });
+}
+
+function endCpu() {
+  G.phase = 'humanRoll';
+  const dbl = canDouble('h') ? '(ダブルするなら振る前にキューブをタップ)' : '';
+  setMsg((G.lastCpu ? G.lastCpu + '<br>' : '') + `あなたの番です。ダイスカップをタップして振ってください${dbl}。`);
+  G.lastCpu = null;
+  render();
+}
+
 // ---------- ダブリングキューブ ----------
+// クロフォードゲームではダブルできない。キューブを持っている側(最初はどちらも)だけがダブルでき、
+// 今のキューブの値でマッチに勝てるならダブルする意味がない
 function canDouble(pl) {
   return !G.crawford && (G.cube.owner === null || G.cube.owner === pl) && M.score[pl] + G.cube.value < M.len;
 }
@@ -472,9 +694,7 @@ function onDouble() {
   G.phase = 'cpuDecide';
   setMsg(`ダブルしました(キューブ ${v} → ${v * 2})。コンピューターが考えています…`);
   render();
-  const g = G;
-  setTimeout(() => {
-    if (g !== G) return;
+  later(DELAY.cpuDecide, () => {
     G.offer = null;
     if (cpuTakes()) {
       G.cube = { value: v * 2, owner: 'c' };
@@ -484,7 +704,7 @@ function onDouble() {
     } else {
       endGame('h', v, 'ダブルにコンピューターがパスしました。');
     }
-  }, 1300);
+  });
 }
 
 function onTake() {
@@ -500,186 +720,25 @@ function onPass() {
   endGame('c', G.cube.value, 'ダブルをパスしました。');
 }
 
-// ---------- 進行 ----------
-function onRoll() {
-  if (G.phase === 'opening') {
-    const h = rnd(), c = rnd();
-    G.openDice = { h, c };
-    if (h === c) { setMsg(`あなた ${h}、コンピューター ${c}。同じ目なのでもう一度振ってください。`); render(); return; }
-    if (h > c) {
-      // 先手決めの両方の目を少し見せてから、あなたの手番に入る
-      G.phase = 'openingShow';
-      setMsg(`あなた ${h}、コンピューター ${c}。あなたが先手です。`);
-      render();
-      const g = G;
-      setTimeout(() => { if (g === G) startHumanTurn([h, c], `あなた ${h}、コンピューター ${c}。あなたが先手です。`); }, 1200);
-    } else {
-      setMsg(`あなた ${h}、コンピューター ${c}。コンピューターが先手です。`);
-      G.phase = 'cpu'; render();
-      const g = G;
-      setTimeout(() => { if (g === G) cpuRoll([c, h]); }, 1200);
-    }
-  } else if (G.phase === 'humanRoll') {
-    startHumanTurn([rnd(), rnd()]);
-  }
-}
-
-function startHumanTurn(dice, prefix) {
-  G.openDice = null;
-  G.dice = dice;
-  G.legal = BG.legalSequences(G.state, 'h', dice);
-  G.played = []; G.turnStart = BG.clone(G.state); G.sel = null;
-  const pre = prefix ? prefix + '<br>' : '';
-  if (G.legal[0].moves.length === 0) {
-    G.phase = 'humanNoMove'; G.steps = [];
-    setMsg(pre + `ダイス ${dice[0]}・${dice[1]}:動かせる手がありません。コンピューターの番になります。`);
-    render();
-    const g = G;
-    setTimeout(() => { if (g === G) cpuTurn(); }, 1800);
-    return;
-  }
-  G.phase = 'humanMove';
-  computeSteps();
-  setMsg(pre + `ダイス ${dice[0]}・${dice[1]}:動かす駒をクリックし、緑の行き先をクリックしてください。`);
-  render();
-}
-
-function computeSteps() {
-  const k = G.played.length, res = [], seen = new Set();
-  for (const q of G.legal) {
-    if (q.moves.length <= k) continue;
-    let ok = true;
-    for (let i = 0; i < k; i++) {
-      const a = q.moves[i], b = G.played[i];
-      if (a.from !== b.from || a.to !== b.to || a.die !== b.die) { ok = false; break; }
-    }
-    if (!ok) continue;
-    const m = q.moves[k], key = m.from + '-' + m.to + '-' + m.die;
-    if (!seen.has(key)) { seen.add(key); res.push(m); }
-  }
-  G.steps = res;
-  const froms = [...new Set(res.map(m => m.from))];
-  G.sel = froms.length === 1 ? froms[0] : null;
-}
-
-// 選んだ駒の行き先 → そこへ行く手順(1 つの目でも、目を続けて使っても良い)。短い手順を優先
-function pathsFrom(from) {
-  const k = G.played.length, res = new Map();
-  if (from === null) return res;
-  for (const q of G.legal) {
-    if (q.moves.length <= k || q.moves[k].from !== from) continue;
-    let ok = true;
-    for (let i = 0; i < k; i++) {
-      const a = q.moves[i], b = G.played[i];
-      if (a.from !== b.from || a.to !== b.to || a.die !== b.die) { ok = false; break; }
-    }
-    if (!ok) continue;
-    const path = [];
-    for (let j = k; j < q.moves.length; j++) {
-      const m = q.moves[j];
-      if (path.length && (m.from !== path[path.length - 1].to || m.from === 0)) break;
-      path.push(m);
-      const old = res.get(m.to);
-      if (!old || path.length < old.length || (path.length === old.length && path[0].die < old[0].die)) res.set(m.to, path.slice());
-    }
-  }
-  return res;
-}
-
-function doPath(path) {
-  for (const m of path) {
-    G.state = BG.applyMove(G.state, 'h', m).state;
-    G.played.push(m);
-  }
-  computeSteps();
-  if (G.steps.length === 0) setMsg('動かし終わりました。ダイスをタップするか「確定」で手番を終えます(「戻す」でやり直し)。');
-  render();
-}
-
-function doStep(m) {
-  G.state = BG.applyMove(G.state, 'h', m).state;
-  G.played.push(m);
-  computeSteps();
-  if (G.steps.length === 0) setMsg('動かし終わりました。ダイスをタップするか「確定」で手番を終えます(「戻す」でやり直し)。');
-  render();
-}
-
-function onUndo() {
-  if (G.phase !== 'humanMove' || !G.played.length) return;
-  G.state = BG.clone(G.turnStart); G.played = [];
-  computeSteps();
-  setMsg(`ダイス ${G.dice[0]}・${G.dice[1]}:動かす駒をクリックしてください。`);
-  render();
-}
-
-function onOk() {
-  if (G.phase !== 'humanMove' || G.steps.length) return;
-  if (checkWin()) return;
-  cpuTurn();
-}
-
-// コンピューターの手番の始まり:まずダブルするかどうか
-function cpuTurn() {
-  G.sel = null; G.steps = []; G.openDice = null; G.played = []; G.dice = null;
-  if (cpuWantsDouble()) {
-    const v = G.cube.value;
-    G.phase = 'humanTake';
-    G.offer = { value: v * 2, by: 'c' };
-    setMsg(`<b>コンピューターがダブルしてきました(キューブ ${v} → ${v * 2})。</b><br><b>キューブをタップでテイク</b>(このゲームは ${v * 2} 点以上に)。「パス」を押すとここで ${v} 点を失います。`);
-    render();
-    return;
-  }
-  cpuRoll();
-}
-
-function cpuRoll(dice) {
-  G.phase = 'cpu'; G.sel = null; G.steps = []; G.openDice = null;
-  G.dice = dice || [rnd(), rnd()];
-  G.played = [];
-  setMsg(`コンピューターの番:ダイス ${G.dice[0]}・${G.dice[1]}`);
-  render();
-  const g = G;
-  setTimeout(() => {
-    if (g !== G) return;
-    const L = LEVELS[M.level];
-    const seq = L.deep ? BG.chooseMoveDeep(G.state, 'c', G.dice) : BG.chooseMove(G.state, 'c', G.dice, L.noise);
-    if (!seq || !seq.moves.length) {
-      setMsg(`コンピューター:ダイス ${G.dice[0]}・${G.dice[1]}、動かせる手がありません。`);
-      setTimeout(() => { if (g === G) endCpu(); }, 1400);
-      return;
-    }
-    let i = 0;
-    const step = () => {
-      if (g !== G) return;
-      if (i < seq.moves.length) {
-        const r = BG.applyMove(G.state, 'c', seq.moves[i++]);
-        G.state = r.state; G.played.push(r.move);
-        render();
-        setTimeout(step, 600);
-      } else {
-        G.lastCpu = `コンピューター(${G.dice[0]}・${G.dice[1]}):${notation(G.played, 'c')}`;
-        if (checkWin()) return;
-        endCpu();
-      }
-    };
-    step();
-  }, 900);
-}
-
-function endCpu() {
-  G.phase = 'humanRoll';
-  const dbl = canDouble('h') ? '(ダブルするなら振る前にキューブをタップ)' : '';
-  setMsg((G.lastCpu ? G.lastCpu + '<br>' : '') + `あなたの番です。ダイスカップをタップして振ってください${dbl}。`);
-  G.lastCpu = null;
-  render();
-}
-
+// ---------- ゲームの終わり ----------
 function checkWin() {
   const r = BG.result(G.state);
   if (!r) return false;
   const pts = r.points * G.cube.value;
   endGame(r.winner, pts, r.kind + (G.cube.value > 1 ? `(キューブ ${G.cube.value})` : '') + 'で');
   return true;
+}
+
+// 投了:今の局面で負けたときと同じ点数(シングル/ギャモン/バックギャモン × キューブ)を相手に渡す
+const canResign = () => HUMAN_PHASES.includes(G.phase);
+function resignPoints() {
+  const v = BG.lossValue(G.state.h);
+  return { pts: v.points * G.cube.value, kind: v.kind };
+}
+
+function resign() {
+  const r = resignPoints();
+  endGame('c', r.pts, `投了しました(${r.kind}${G.cube.value > 1 ? `、キューブ ${G.cube.value}` : ''})。`);
 }
 
 function endGame(w, pts, reason) {
@@ -697,84 +756,69 @@ function endGame(w, pts, reason) {
   render();
 }
 
-svg.addEventListener('click', e => {
-  // ダイスカップ = ダイスを振る、キューブ = ダブル
-  const act = e.target.closest('[data-act]');
-  if (act) {
-    if (act.dataset.act === 'roll') onRoll();
-    else if (act.dataset.act === 'double') onDouble();
-    else if (act.dataset.act === 'take') onTake();
-    else if (act.dataset.act === 'ok') onOk();
-    return;
-  }
-  if (G.phase !== 'humanMove') return;
-  const t = e.target.closest('[data-pt]');
-  if (!t) { return; }
-  const pt = +t.dataset.pt;
-  if (G.sel !== null) {
-    const path = pathsFrom(G.sel).get(pt);
-    if (path) { doPath(path); return; }
-  }
-  if (G.steps.some(m => m.from === pt)) {
-    // 行き先が 1 か所しかなければ、選んだ時点で動かす
-    const only = pathsFrom(pt);
-    if (only.size === 1) { doPath([...only.values()][0]); return; }
-    G.sel = pt; render(); return;
-  }
-  if (new Set(G.steps.map(m => m.from)).size > 1) { G.sel = null; render(); }
-});
-
-// ---------- 描画 ----------
-function checker(cx, cy, pl, label, sel) {
+// ================= 描画 =================
+const COLOR = {
+  frame: '#5a3a22', felt: '#e8d6ad', wood: '#4a2f1b', woodDark: '#2c1b0f',
+  pointRed: '#a33b2b', pointGreen: '#2f4f3f', label: '#cfc6b0',
+  hint: '#3ddc84', gold: '#ffd23f', ink: '#222', cubeFace: '#f7f3e8',
+  h: { fill: '#f5f0e3', edge: '#6b6457', ring: '#d8d0bc', text: '#333', pip: '#fffaf0', die: '#fffdf6', dot: '#222' },
   // コンピューターの駒は黒に明るい縁取り(赤・緑どちらのポイントの上でも見分けやすく)
-  const fill = pl === 'h' ? '#f5f0e3' : '#1d1d22';
-  const stroke = sel ? '#ffd23f' : (pl === 'h' ? '#6b6457' : '#d8c9a3');
-  const sw = sel ? 4 : 2;
-  let s = `<circle cx="${cx}" cy="${cy}" r="${R - 1}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`;
-  s += `<circle cx="${cx}" cy="${cy}" r="${R * 0.68}" fill="none" stroke="${pl === 'h' ? '#d8d0bc' : '#5a5a66'}" stroke-width="1.5"/>`;
-  if (label) s += `<text ${tx(cx)} y="${cy + R * 0.3}" text-anchor="middle" font-size="${Math.round(R * 0.8)}" font-weight="bold" fill="${pl === 'h' ? '#333' : '#fff'}">${label}</text>`;
-  return s;
-}
-
-function die(x, y, v, size, dim, pl) {
-  const bg = pl === 'h' ? '#fffdf6' : '#1d1d22', dot = pl === 'h' ? '#222' : '#fff';
-  let s = `<g opacity="${dim ? 0.3 : 1}"><rect x="${x}" y="${y}" width="${size}" height="${size}" rx="7" fill="${bg}" stroke="#222" stroke-width="1.5"/>`;
-  const c = size / 2, o = size * 0.27, r = size * 0.09;
-  const P = { 1: [[0, 0]], 2: [[-1, -1], [1, 1]], 3: [[-1, -1], [0, 0], [1, 1]], 4: [[-1, -1], [1, -1], [-1, 1], [1, 1]], 5: [[-1, -1], [1, -1], [0, 0], [-1, 1], [1, 1]], 6: [[-1, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [1, 1]] };
-  for (const [dx, dy] of P[v]) s += `<circle cx="${x + c + dx * o}" cy="${y + c + dy * o}" r="${r}" fill="${dot}"/>`;
-  return s + '</g>';
-}
+  c: { fill: '#1d1d22', edge: '#d8c9a3', ring: '#5a5a66', text: '#fff', pip: '#b8bccb', die: '#1d1d22', dot: '#fff' },
+};
 
 // 左右反転時も文字は読める向きのまま置く
 function tx(x) { return M.flip ? `x="${-x}" transform="scale(-1,1)"` : `x="${x}"`; }
 
-function render() {
-  const st = G.state;
-  const dests = G.phase === 'humanMove' ? new Set(pathsFrom(G.sel).keys()) : new Set();
-  const sources = new Set(G.steps.map(m => m.from));
-  let s = '', okArea = '';
-  layout();
-  // 枠と盤
-  s += `<rect x="8" y="18" width="${RE + 4}" height="504" rx="10" fill="#5a3a22"/>`;
-  s += `<rect x="20" y="${TOP}" width="${6 * W}" height="${BOT - TOP}" fill="#e8d6ad"/>`;
-  s += `<rect x="${RX}" y="${TOP}" width="${6 * W}" height="${BOT - TOP}" fill="#e8d6ad"/>`;
-  s += `<rect x="${BX}" y="${TOP}" width="${BW}" height="${BOT - TOP}" fill="#4a2f1b"/>`;
-  s += `<rect x="${TX0}" y="${TOP}" width="72" height="${BOT - TOP}" rx="6" fill="#4a2f1b"/>`;
-  s += `<line x1="${TX0}" y1="${MID}" x2="${TX0 + 72}" y2="${MID}" stroke="#2c1b0f" stroke-width="3"/>`;
-  // ポイント(三角形)と番号
+function checker(cx, cy, pl, label, sel) {
+  const c = COLOR[pl];
+  let s = `<circle cx="${cx}" cy="${cy}" r="${R - 1}" fill="${c.fill}" stroke="${sel ? COLOR.gold : c.edge}" stroke-width="${sel ? 4 : 2}"/>`;
+  s += `<circle cx="${cx}" cy="${cy}" r="${R * 0.68}" fill="none" stroke="${c.ring}" stroke-width="1.5"/>`;
+  if (label) s += `<text ${tx(cx)} y="${cy + R * 0.3}" text-anchor="middle" font-size="${Math.round(R * 0.8)}" font-weight="bold" fill="${c.text}">${label}</text>`;
+  return s;
+}
+
+const PIPS = { 1: [[0, 0]], 2: [[-1, -1], [1, 1]], 3: [[-1, -1], [0, 0], [1, 1]], 4: [[-1, -1], [1, -1], [-1, 1], [1, 1]], 5: [[-1, -1], [1, -1], [0, 0], [-1, 1], [1, 1]], 6: [[-1, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [1, 1]] };
+function die(x, y, v, size, dim, pl) {
+  const c = COLOR[pl];
+  let s = `<g opacity="${dim ? 0.3 : 1}"><rect x="${x}" y="${y}" width="${size}" height="${size}" rx="7" fill="${c.die}" stroke="${COLOR.ink}" stroke-width="1.5"/>`;
+  const m = size / 2, o = size * 0.27, r = size * 0.09;
+  for (const [dx, dy] of PIPS[v]) s += `<circle cx="${x + m + dx * o}" cy="${y + m + dy * o}" r="${r}" fill="${c.dot}"/>`;
+  return s + '</g>';
+}
+
+// 枠・盤・バー・トレイ、ポイントの三角形と番号
+function drawBoard() {
+  let s = `<rect x="8" y="18" width="${RE + 4}" height="504" rx="10" fill="${COLOR.frame}"/>`;
+  s += `<rect x="${EDGE}" y="${TOP}" width="${6 * W}" height="${BOT - TOP}" fill="${COLOR.felt}"/>`;
+  s += `<rect x="${RX}" y="${TOP}" width="${6 * W}" height="${BOT - TOP}" fill="${COLOR.felt}"/>`;
+  s += `<rect x="${BX}" y="${TOP}" width="${BW}" height="${BOT - TOP}" fill="${COLOR.wood}"/>`;
+  s += `<rect x="${TX0}" y="${TOP}" width="${TRAY_W}" height="${BOT - TOP}" rx="6" fill="${COLOR.wood}"/>`;
+  s += `<line x1="${TX0}" y1="${MID}" x2="${TX0 + TRAY_W}" y2="${MID}" stroke="${COLOR.woodDark}" stroke-width="3"/>`;
   for (let p = 1; p <= 24; p++) {
     const x = colX(p), top = p >= 13;
-    const col = p % 2 === 0 ? '#a33b2b' : '#2f4f3f';
-    if (top) s += `<polygon points="${x + 1},${TOP} ${x + W - 1},${TOP} ${x + W / 2},${TOP + 200}" fill="${col}"/>`;
-    else s += `<polygon points="${x + 1},${BOT} ${x + W - 1},${BOT} ${x + W / 2},${BOT - 200}" fill="${col}"/>`;
-    s += `<text ${tx(x + W / 2)} y="${top ? 14 : 536}" text-anchor="middle" font-size="12" fill="#cfc6b0">${p}</text>`;
+    const col = p % 2 === 0 ? COLOR.pointRed : COLOR.pointGreen;
+    const base = top ? TOP : BOT, tip = top ? TOP + POINT_H : BOT - POINT_H;
+    s += `<polygon points="${x + 1},${base} ${x + W - 1},${base} ${x + W / 2},${tip}" fill="${col}"/>`;
+    s += `<text ${tx(x + W / 2)} y="${top ? 14 : 536}" text-anchor="middle" font-size="12" fill="${COLOR.label}">${p}</text>`;
   }
-  // 行き先のハイライト
-  for (const d of dests) {
-    if (d === 0) s += `<rect x="${TX0 + 2}" y="${MID + 2}" width="68" height="${BOT - MID - 4}" rx="6" fill="#3ddc84" opacity="0.45" pointer-events="none"/>`;
-    else { const x = colX(d), top = d >= 13; s += `<rect x="${x + 2}" y="${top ? TOP + 2 : MID + 2}" width="${W - 4}" height="${MID - TOP - 4}" rx="6" fill="#3ddc84" opacity="0.45" pointer-events="none"/>`; }
+  return s;
+}
+
+// 選んだ駒の行き先を緑で光らせる
+function drawDestinations() {
+  if (G.phase !== 'humanMove') return '';
+  let s = '';
+  for (const d of pathsFrom(G.sel).keys()) {
+    if (d === BG.OFF) s += `<rect x="${TX0 + 2}" y="${MID + 2}" width="${TRAY_W - 4}" height="${BOT - MID - 4}" rx="6" fill="${COLOR.hint}" opacity="0.45" pointer-events="none"/>`;
+    else { const x = colX(d), top = d >= 13; s += `<rect x="${x + 2}" y="${top ? TOP + 2 : MID + 2}" width="${W - 4}" height="${MID - TOP - 4}" rx="6" fill="${COLOR.hint}" opacity="0.45" pointer-events="none"/>`; }
   }
-  // 駒
+  return s;
+}
+
+// ポイントの駒(5 個まで並べ、それ以上は数字)と、動かせる駒の点線の印
+function drawCheckers(st) {
+  const sources = new Set(G.steps.map(m => m.from));
+  let s = '';
   for (let p = 1; p <= 24; p++) {
     const hn = st.h[p], cn = st.c[25 - p];
     const n = hn || cn; if (!n) continue;
@@ -782,126 +826,200 @@ function render() {
     const shown = Math.min(n, 5);
     // 駒が大きいときは重ねて並べ、盤の中央を越えないようにする
     const step = shown > 1 ? Math.min(2 * R, (MID - TOP - 6 - 2 * R) / (shown - 1)) : 0;
+    const yAt = i => (top ? TOP + R + i * step : BOT - R - i * step);
     for (let i = 0; i < shown; i++) {
-      const cy = top ? TOP + R + i * step : BOT - R - i * step;
       const last = i === shown - 1;
-      s += checker(x, cy, pl, last && n > 5 ? n : '', last && pl === 'h' && G.sel === p);
+      s += checker(x, yAt(i), pl, last && n > 5 ? n : '', last && pl === 'h' && G.sel === p);
     }
     if (pl === 'h' && sources.has(p) && G.sel !== p) {
-      const cy = top ? TOP + R + (shown - 1) * step : BOT - R - (shown - 1) * step;
-      s += `<circle cx="${x}" cy="${cy}" r="${R + 1}" fill="none" stroke="#ffd23f" stroke-width="2" stroke-dasharray="4 3" pointer-events="none"/>`;
+      s += `<circle cx="${x}" cy="${yAt(shown - 1)}" r="${R + 1}" fill="none" stroke="${COLOR.gold}" stroke-width="2" stroke-dasharray="4 3" pointer-events="none"/>`;
     }
   }
-  // バー
-  for (let i = 0; i < Math.min(st.h[25], 3); i++) {
-    const last = i === Math.min(st.h[25], 3) - 1;
-    s += checker(BX + BW / 2, MID + 24 + R + i * Math.min(2 * R, (MID - TOP - 30 - 2 * R) / 2), 'h', last && st.h[25] > 3 ? st.h[25] : '', last && G.sel === 25);
+  return s;
+}
+
+// バーの駒(3 個まで並べ、それ以上は数字)。あなたは中央より下、コンピューターは上
+function drawBar(st) {
+  const step = Math.min(2 * R, (MID - TOP - 30 - 2 * R) / 2);
+  let s = '';
+  for (const pl of ['h', 'c']) {
+    const n = st[pl][BG.BAR], shown = Math.min(n, 3), dir = pl === 'h' ? 1 : -1;
+    for (let i = 0; i < shown; i++) {
+      const last = i === shown - 1;
+      s += checker(BX + BW / 2, MID + dir * (24 + R + i * step), pl, last && n > 3 ? n : '', pl === 'h' && last && G.sel === BG.BAR);
+    }
   }
-  for (let i = 0; i < Math.min(st.c[25], 3); i++) {
-    const last = i === Math.min(st.c[25], 3) - 1;
-    s += checker(BX + BW / 2, MID - 24 - R - i * Math.min(2 * R, (MID - TOP - 30 - 2 * R) / 2), 'c', last && st.c[25] > 3 ? st.c[25] : '', false);
-  }
-  // ダブリングキューブ(持ち主の側に置く。クロフォードゲームでは表示しない)
-  if (!G.crawford && M.len > 1 && !G.offer) {
-    const cv = G.cube.value === 1 ? 64 : G.cube.value;
-    const cs = cubeSize(), cy = G.cube.owner === 'h' ? BOT - cs / 2 - 4 : G.cube.owner === 'c' ? TOP + cs / 2 + 4 : MID;
-    s += `<rect x="${BX + BW / 2 - cs / 2}" y="${cy - cs / 2}" width="${cs}" height="${cs}" rx="6" fill="#f7f3e8" stroke="#222" stroke-width="2"/>`;
-    const fs = Math.round(cs * (cv >= 10 ? 0.44 : 0.56));
-    s += `<text ${tx(BX + BW / 2)} y="${cy + fs * 0.36}" text-anchor="middle" font-size="${fs}" font-weight="bold" fill="#222">${cv}</text>`;
-  }
-  // ダブルの申し込み中:新しい値のキューブを盤の真ん中に大きく表示
+  return s;
+}
+
+// ダブリングキューブ(持ち主の側に置く。クロフォードゲームでは表示しない)。
+// ダブルの申し込み中は、新しい値のキューブを盤の真ん中に大きく表示する
+function drawCube() {
+  const cx = BX + BW / 2;
   if (G.offer) {
-    const cx = BX + BW / 2, sz = 100;
-    s += `<rect x="${cx - 80}" y="${MID - sz / 2 - 30}" width="160" height="${sz + (G.phase === 'humanTake' ? 62 : 42)}" rx="10" fill="#1a1208" opacity="0.8" pointer-events="none"/>`;
-    s += `<text ${tx(cx)} y="${MID - sz / 2 - 8}" text-anchor="middle" font-size="16" font-weight="bold" fill="#ffd23f" pointer-events="none">${G.offer.by === 'h' ? 'あなたのダブル' : 'ダブル!'}</text>`;
-    s += `<rect x="${cx - sz / 2}" y="${MID - sz / 2}" width="${sz}" height="${sz}" rx="10" fill="#f7f3e8" stroke="#ffd23f" stroke-width="4" pointer-events="none"/>`;
-    s += `<text ${tx(cx)} y="${MID + 20}" text-anchor="middle" font-size="${G.offer.value >= 10 ? 48 : 58}" font-weight="bold" fill="#222" pointer-events="none">${G.offer.value}</text>`;
-    if (G.phase === 'humanTake') {
-      s += `<text ${tx(cx)} y="${MID + sz / 2 + 2 + 14}" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff6dc" pointer-events="none">タップでテイク</text>`;
-    }
+    const sz = 100, take = G.phase === 'humanTake';
+    let s = `<rect x="${cx - 80}" y="${MID - sz / 2 - 30}" width="160" height="${sz + (take ? 62 : 42)}" rx="10" fill="#1a1208" opacity="0.8" pointer-events="none"/>`;
+    s += `<text ${tx(cx)} y="${MID - sz / 2 - 8}" text-anchor="middle" font-size="16" font-weight="bold" fill="${COLOR.gold}" pointer-events="none">${G.offer.by === 'h' ? 'あなたのダブル' : 'ダブル!'}</text>`;
+    s += `<rect x="${cx - sz / 2}" y="${MID - sz / 2}" width="${sz}" height="${sz}" rx="10" fill="${COLOR.cubeFace}" stroke="${COLOR.gold}" stroke-width="4" pointer-events="none"/>`;
+    s += `<text ${tx(cx)} y="${MID + 20}" text-anchor="middle" font-size="${G.offer.value >= 10 ? 48 : 58}" font-weight="bold" fill="${COLOR.ink}" pointer-events="none">${G.offer.value}</text>`;
+    if (take) s += `<text ${tx(cx)} y="${MID + sz / 2 + 16}" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff6dc" pointer-events="none">タップでテイク</text>`;
+    return s;
   }
-  // 上がった駒(トレイ)
-  for (let i = 0; i < st.h[0]; i++) s += `<rect x="${TX0 + 8}" y="${BOT - 6 - (i + 1) * 13}" width="56" height="11" rx="3" fill="#f5f0e3" stroke="#6b6457"/>`;
-  for (let i = 0; i < st.c[0]; i++) s += `<rect x="${TX0 + 8}" y="${TOP + 6 + i * 13}" width="56" height="11" rx="3" fill="#1d1d22" stroke="#d8c9a3"/>`;
-  // ピップ数:トレイの仕切りのすぐ上(コンピューター)と下(あなた)に大きく表示
+  if (G.crawford || M.len === 1) return '';
+  const cv = G.cube.value === 1 ? 64 : G.cube.value;
+  const cs = cubeSize(), cy = cubeY(), fs = Math.round(cs * (cv >= 10 ? 0.44 : 0.56));
+  let s = `<rect x="${cx - cs / 2}" y="${cy - cs / 2}" width="${cs}" height="${cs}" rx="6" fill="${COLOR.cubeFace}" stroke="${COLOR.ink}" stroke-width="2"/>`;
+  s += `<text ${tx(cx)} y="${cy + fs * 0.36}" text-anchor="middle" font-size="${fs}" font-weight="bold" fill="${COLOR.ink}">${cv}</text>`;
+  return s;
+}
+
+// トレイ:上がった駒と、仕切りの上下のピップ数(上がコンピューター、下があなた)
+function drawTray(st) {
+  let s = '';
+  for (let i = 0; i < st.h[BG.OFF]; i++) s += `<rect x="${TX0 + 8}" y="${BOT - 6 - (i + 1) * 13}" width="56" height="11" rx="3" fill="${COLOR.h.fill}" stroke="${COLOR.h.edge}"/>`;
+  for (let i = 0; i < st.c[BG.OFF]; i++) s += `<rect x="${TX0 + 8}" y="${TOP + 6 + i * 13}" width="56" height="11" rx="3" fill="${COLOR.c.fill}" stroke="${COLOR.c.edge}"/>`;
   if ($('chkPips').checked) {
-    s += `<rect x="${TX0 + 1}" y="${MID - 40}" width="70" height="80" rx="4" fill="#2c1b0f"/>`;
-    s += `<text ${tx(TC)} y="${MID - 28}" text-anchor="middle" font-size="11" fill="#cfc6b0">ピップ</text>`;
-    s += `<text ${tx(TC)} y="${MID - 4}" text-anchor="middle" font-size="26" font-weight="bold" fill="#b8bccb">${BG.pip(st.c)}</text>`;
-    s += `<text ${tx(TC)} y="${MID + 32}" text-anchor="middle" font-size="26" font-weight="bold" fill="#fffaf0">${BG.pip(st.h)}</text>`;
+    s += `<rect x="${TX0 + 1}" y="${MID - 40}" width="70" height="80" rx="4" fill="${COLOR.woodDark}"/>`;
+    s += `<text ${tx(TC)} y="${MID - 28}" text-anchor="middle" font-size="11" fill="${COLOR.label}">ピップ</text>`;
+    s += `<text ${tx(TC)} y="${MID - 4}" text-anchor="middle" font-size="26" font-weight="bold" fill="${COLOR.c.pip}">${BG.pip(st.c)}</text>`;
+    s += `<text ${tx(TC)} y="${MID + 32}" text-anchor="middle" font-size="26" font-weight="bold" fill="${COLOR.h.pip}">${BG.pip(st.h)}</text>`;
   }
-  // ダイス
+  return s;
+}
+
+// ダイス。使った目は薄くする。動かし終わったら、薄くなったダイスをタップで確定(タップ領域は別に返す)
+const DIE = 52, DIE_GAP = 60;
+function drawDice() {
   if (G.openDice) {
-    // あなたのダイスは向きに関係なく画面の右側、コンピューターは左側
-    s += die((M.flip ? LC : RC) - 26, MID - 26, G.openDice.h, 52, false, 'h');
-    s += die((M.flip ? RC : LC) - 26, MID - 26, G.openDice.c, 52, false, 'c');
-  } else if (G.dice && G.phase !== 'humanRoll' && G.phase !== 'over' && G.phase !== 'opening') {
-    const pl = G.phase === 'cpu' ? 'c' : 'h';
-    const dl = G.dice[0] === G.dice[1] ? [G.dice[0], G.dice[0], G.dice[0], G.dice[0]] : G.dice.slice();
-    const used = dl.map(() => false);
-    for (const m of G.played) { const i = dl.findIndex((v, k) => v === m.die && !used[k]); if (i >= 0) used[i] = true; }
-    const size = 52, gap = 60, total = dl.length * gap - 8;
-    const x0 = ((pl === 'h') !== M.flip ? RC : LC) - total / 2;
-    dl.forEach((v, k) => { s += die(x0 + k * gap, MID - size / 2, v, size, used[k] || G.phase === 'humanNoMove', pl); });
-    // 動かし終わったら、薄くなったダイスをタップで確定
-    if (G.phase === 'humanMove' && G.steps.length === 0) {
-      s += `<text ${tx(x0 + total / 2)} y="${MID + size / 2 + 18}" text-anchor="middle" font-size="14" font-weight="bold" fill="#2f4f3f">タップで確定</text>`;
-      okArea = `<rect class="pt" data-act="ok" x="${x0 - 8}" y="${MID - size / 2 - 8}" width="${total + 16}" height="${size + 36}" rx="8" fill="transparent" stroke="#ffd23f" stroke-width="3" stroke-dasharray="5 3"/>`;
-    }
+    return { s: die(diceX('h') - DIE / 2, MID - DIE / 2, G.openDice.h, DIE, false, 'h')
+              + die(diceX('c') - DIE / 2, MID - DIE / 2, G.openDice.c, DIE, false, 'c'), ok: '' };
   }
-  // クリック領域
+  if (!G.dice || ['humanRoll', 'over', 'opening'].includes(G.phase)) return { s: '', ok: '' };
+  const pl = G.phase === 'cpu' ? 'c' : 'h';
+  const dl = BG.diceList(G.dice);
+  const used = dl.map(() => false);
+  for (const m of G.played) { const i = dl.findIndex((v, k) => v === m.die && !used[k]); if (i >= 0) used[i] = true; }
+  const total = dl.length * DIE_GAP - 8, x0 = diceX(pl) - total / 2;
+  let s = '', ok = '';
+  dl.forEach((v, k) => { s += die(x0 + k * DIE_GAP, MID - DIE / 2, v, DIE, used[k] || G.phase === 'humanNoMove', pl); });
+  if (allPlayed()) {
+    s += `<text ${tx(x0 + total / 2)} y="${MID + DIE / 2 + 18}" text-anchor="middle" font-size="14" font-weight="bold" fill="${COLOR.pointGreen}">タップで確定</text>`;
+    ok = `<rect class="pt" data-act="ok" x="${x0 - 8}" y="${MID - DIE / 2 - 8}" width="${total + 16}" height="${DIE + 36}" rx="8" fill="transparent" stroke="${COLOR.gold}" stroke-width="3" stroke-dasharray="5 3"/>`;
+  }
+  return { s, ok };
+}
+
+// ダイスカップ(振る番のとき、画面の右側=あなたの側に表示。タップで振る)
+function drawCup() {
+  if (!canRoll()) return '';
+  const cx = M.flip ? LC - 1.5 * W : RC + 1.5 * W, cy = MID;
+  let s = `<g class="pt" data-act="roll">`;
+  s += `<rect x="${cx - 40}" y="${cy - 46}" width="80" height="92" fill="transparent"/>`;
+  s += `<path d="M ${cx - 27} ${cy - 30} L ${cx + 27} ${cy - 30} L ${cx + 21} ${cy + 34} Q ${cx} ${cy + 42} ${cx - 21} ${cy + 34} Z" fill="#6b3d22" stroke="${COLOR.gold}" stroke-width="3"/>`;
+  s += `<ellipse cx="${cx}" cy="${cy - 30}" rx="27" ry="8" fill="#3b2012" stroke="${COLOR.gold}" stroke-width="3"/>`;
+  s += `<path d="M ${cx - 24} ${cy - 6} L ${cx + 24} ${cy - 6} M ${cx - 22} ${cy + 18} L ${cx + 22} ${cy + 18}" stroke="#8d5532" stroke-width="3"/>`;
+  s += `<text ${tx(cx)} y="${cy + 12}" text-anchor="middle" font-size="17" font-weight="bold" fill="#fff6dc">振る</text>`;
+  return s + `</g>`;
+}
+
+// タップ領域: ポイント・バー・トレイ(data-pt)と、テイク・ダブル(data-act)
+function drawPointAreas() {
+  let s = '';
   for (let p = 1; p <= 24; p++) {
     const x = colX(p), top = p >= 13;
     s += `<rect class="pt" data-pt="${p}" x="${x}" y="${top ? TOP : MID}" width="${W}" height="${MID - TOP}" fill="transparent"/>`;
   }
-  s += `<rect class="pt" data-pt="25" x="${BX}" y="${TOP}" width="${BW}" height="${BOT - TOP}" fill="transparent"/>`;
-  s += `<rect class="pt" data-pt="0" x="${TX0}" y="${MID}" width="72" height="${BOT - MID}" fill="transparent"/>`;
-  // ダイスカップ(振る番のとき、画面の右側=あなたの側に表示。タップで振る)
-  if (G.phase === 'opening' || G.phase === 'humanRoll') {
-    const cx = M.flip ? LC - 1.5 * W : RC + 1.5 * W, cy = MID;
-    s += `<g class="pt" data-act="roll">`;
-    s += `<rect x="${cx - 40}" y="${cy - 46}" width="80" height="92" fill="transparent"/>`;
-    s += `<path d="M ${cx - 27} ${cy - 30} L ${cx + 27} ${cy - 30} L ${cx + 21} ${cy + 34} Q ${cx} ${cy + 42} ${cx - 21} ${cy + 34} Z" fill="#6b3d22" stroke="#ffd23f" stroke-width="3"/>`;
-    s += `<ellipse cx="${cx}" cy="${cy - 30}" rx="27" ry="8" fill="#3b2012" stroke="#ffd23f" stroke-width="3"/>`;
-    s += `<path d="M ${cx - 24} ${cy - 6} L ${cx + 24} ${cy - 6} M ${cx - 22} ${cy + 18} L ${cx + 22} ${cy + 18}" stroke="#8d5532" stroke-width="3"/>`;
-    s += `<text ${tx(cx)} y="${cy + 12}" text-anchor="middle" font-size="17" font-weight="bold" fill="#fff6dc">振る</text>`;
-    s += `</g>`;
-  }
-  s += okArea;
+  s += `<rect class="pt" data-pt="${BG.BAR}" x="${BX}" y="${TOP}" width="${BW}" height="${BOT - TOP}" fill="transparent"/>`;
+  s += `<rect class="pt" data-pt="${BG.OFF}" x="${TX0}" y="${MID}" width="${TRAY_W}" height="${BOT - MID}" fill="transparent"/>`;
+  return s;
+}
+
+function drawCubeAreas() {
+  const cx = BX + BW / 2;
   // ダブルされたとき:真ん中の大きなキューブをタップでテイク
   if (G.phase === 'humanTake' && G.offer) {
-    s += `<rect class="pt" data-act="take" x="${BX + BW / 2 - 80}" y="${MID - 80}" width="160" height="160" fill="transparent"/>`;
+    return `<rect class="pt" data-act="take" x="${cx - 80}" y="${MID - 80}" width="160" height="160" fill="transparent"/>`;
   }
-  // キューブ(ダブルできるときはタップでダブル)
+  // ダブルできるとき:キューブをタップでダブル
   if (G.phase === 'humanRoll' && canDouble('h') && !G.offer) {
-    const cs = cubeSize(), cy = G.cube.owner === 'h' ? BOT - cs / 2 - 4 : G.cube.owner === 'c' ? TOP + cs / 2 + 4 : MID;
-    s += `<rect class="pt" data-act="double" x="${BX + BW / 2 - cs / 2 - 3}" y="${cy - cs / 2 - 3}" width="${cs + 6}" height="${cs + 6}" rx="8" fill="transparent" stroke="#ffd23f" stroke-width="3" stroke-dasharray="5 3"/>`;
+    const cs = cubeSize(), cy = cubeY();
+    return `<rect class="pt" data-act="double" x="${cx - cs / 2 - 3}" y="${cy - cs / 2 - 3}" width="${cs + 6}" height="${cs + 6}" rx="8" fill="transparent" stroke="${COLOR.gold}" stroke-width="3" stroke-dasharray="5 3"/>`;
   }
-  svg.innerHTML = M.flip ? `<g transform="translate(${TOTAL},0) scale(-1,1)">${s}</g>` : s;
+  return '';
+}
 
+// スコア・マッチ情報・ボタン
+function updatePanel() {
   $('sh').textContent = M.score.h; $('sc').textContent = M.score.c; $('target').textContent = `${M.len}点先取`;
   $('matchinfo').textContent = `${M.len} ポイントマッチ・${LEVELS[M.level].name}` + (G.crawford ? '・クロフォードゲーム' : '') + (G.cube.value > 1 ? `・キューブ ${G.cube.value}(${G.cube.owner === 'h' ? 'あなた' : 'コンピューター'}側)` : '');
   const show = (id, on) => { $(id).style.display = on ? '' : 'none'; };
-  show('btnRoll', false); // ダイスカップで振る
-  show('btnDouble', false); // キューブをタップでダブル
-  show('btnUndo', G.phase !== 'humanTake' && G.phase !== 'over');
-  show('btnOk', G.phase !== 'humanTake' && G.phase !== 'over');
-  show('btnTake', false); // 真ん中のキューブをタップでテイク
+  const playing = G.phase !== 'humanTake' && G.phase !== 'over';
+  show('btnUndo', playing);
+  show('btnOk', playing);
   show('btnPass', G.phase === 'humanTake');
   show('btnNext', G.phase === 'over' && !M.over);
   show('btnResign', G.phase !== 'over' && G.phase !== 'opening');
-  $('btnResign').disabled = !canResign();
-  if (!canResign() && typeof resignArmed !== 'undefined' && resignArmed) resetResign();
-  $('btnDouble').disabled = !(G.phase === 'humanRoll' && canDouble('h'));
-  $('pips').textContent = '';
-  $('btnRoll').disabled = !(G.phase === 'opening' || G.phase === 'humanRoll');
   $('btnUndo').disabled = !(G.phase === 'humanMove' && G.played.length > 0);
-  $('btnOk').disabled = !(G.phase === 'humanMove' && G.steps.length === 0);
+  $('btnOk').disabled = !allPlayed();
+  $('btnResign').disabled = !canResign();
+  if (!canResign()) resignTap.reset();
 }
 
-$('btnRoll').onclick = onRoll;
+function render() {
+  layout();
+  const st = G.state;
+  const dice = drawDice();
+  const s = drawBoard() + drawDestinations() + drawCheckers(st) + drawBar(st) + drawCube() + drawTray(st)
+    + dice.s + drawPointAreas() + drawCup() + dice.ok + drawCubeAreas();
+  svg.innerHTML = M.flip ? `<g transform="translate(${TOTAL},0) scale(-1,1)">${s}</g>` : s;
+  updatePanel();
+}
+
+// ================= 入力 =================
+// 2 回押しで確認するボタン(埋め込み表示では confirm() が使えないため)。4 秒たつと元に戻る
+function confirmTap(btn) {
+  const label = btn.textContent;
+  let timer = null;
+  const reset = () => { if (timer === null) return; clearTimeout(timer); timer = null; btn.textContent = label; };
+  return {
+    reset,
+    // 1 回目は確認の文言を出して false、続けて押されたら true
+    tap(armedLabel) {
+      if (timer !== null) { reset(); return true; }
+      btn.textContent = armedLabel;
+      timer = setTimeout(reset, DELAY.confirmTap);
+      return false;
+    },
+  };
+}
+const resignTap = confirmTap($('btnResign'));
+const newTap = confirmTap($('btnNew'));
+
+svg.addEventListener('click', e => {
+  // ダイスカップ = 振る、キューブ = ダブル/テイク、薄いダイス = 確定
+  const act = e.target.closest('[data-act]');
+  if (act) {
+    ({ roll: onRoll, double: onDouble, take: onTake, ok: onOk })[act.dataset.act]();
+    return;
+  }
+  const t = e.target.closest('[data-pt]');
+  if (G.phase === 'humanMove' && t) onPoint(+t.dataset.pt);
+});
+
 $('btnUndo').onclick = onUndo;
 $('btnOk').onclick = onOk;
+$('btnPass').onclick = onPass;
+$('btnNext').onclick = () => { if (G.phase === 'over' && !M.over) newGame(); };
+$('btnResign').onclick = () => {
+  if (canResign() && resignTap.tap(`もう一度押すと投了(${resignPoints().pts} 点を失う)`)) resign();
+};
+// 試合中は 2 回押しで確認する
+$('btnNew').onclick = () => {
+  const playing = !M.over && (M.score.h || M.score.c || G.phase !== 'opening');
+  if (!playing) { newTap.reset(); newMatch(); return; }
+  if (newTap.tap('もう一度押すと今のマッチをやめます')) newMatch();
+};
+
 // ピップ数の表示はいつでも切り替えられる(この端末に覚えておく)
 try { const v = localStorage.getItem('bgShowPips'); if (v !== null) $('chkPips').checked = v === '1'; } catch (e) {}
 $('chkPips').onchange = () => {
@@ -909,49 +1027,7 @@ $('chkPips').onchange = () => {
   $('chkPips').blur();
   render();
 };
-$('btnDouble').onclick = onDouble;
-$('btnTake').onclick = onTake;
-$('btnPass').onclick = onPass;
-$('btnNext').onclick = () => { if (G.phase === 'over' && !M.over) newGame(); };
-// 投了:今の局面で負けたときと同じ点数(シングル/ギャモン/バックギャモン × キューブ)を相手に渡す
-function resignPoints() {
-  const h = G.state.h;
-  let pts = 1, kind = 'シングル';
-  if (h[0] === 0) {
-    pts = 2; kind = 'ギャモン';
-    let back = h[25] > 0;
-    for (let p = 19; p <= 24; p++) if (h[p]) back = true;
-    if (back) { pts = 3; kind = 'バックギャモン'; }
-  }
-  return { pts: pts * G.cube.value, kind };
-}
-const canResign = () => ['humanRoll', 'humanMove', 'humanNoMove', 'humanTake'].includes(G.phase);
-let resignArmed = null;
-function resetResign() { clearTimeout(resignArmed); resignArmed = null; $('btnResign').textContent = '投了'; }
-$('btnResign').onclick = () => {
-  if (!canResign()) return;
-  const r = resignPoints();
-  if (!resignArmed) {
-    $('btnResign').textContent = `もう一度押すと投了(${r.pts} 点を失う)`;
-    resignArmed = setTimeout(resetResign, 4000);
-    return;
-  }
-  resetResign();
-  endGame('c', r.pts, `投了しました(${r.kind}${G.cube.value > 1 ? `、キューブ ${G.cube.value}` : ''})。`);
-};
 
-// 試合中は 2 回押しで確認する(埋め込み表示では confirm() が使えないため)
-let newArmed = null;
-$('btnNew').onclick = () => {
-  const playing = !M.over && (M.score.h || M.score.c || G.phase !== 'opening');
-  if (playing && !newArmed) {
-    $('btnNew').textContent = 'もう一度押すと今のマッチをやめます';
-    newArmed = setTimeout(() => { newArmed = null; $('btnNew').textContent = '新しいマッチ'; }, 4000);
-    return;
-  }
-  clearTimeout(newArmed); newArmed = null; $('btnNew').textContent = '新しいマッチ';
-  newMatch();
-};
 // キーボード操作: Enter = ダイスを振る/確定、Backspace = 戻す
 document.addEventListener('keydown', e => {
   const tag = (e.target.tagName || '').toLowerCase();
@@ -959,15 +1035,16 @@ document.addEventListener('keydown', e => {
   if (e.ctrlKey || e.metaKey || e.altKey) return;
   if (e.key === 'Enter') {
     e.preventDefault();
-    if (G.phase === 'opening' || G.phase === 'humanRoll') onRoll();
-    else if (G.phase === 'humanMove' && G.steps.length === 0) onOk();
+    if (canRoll()) onRoll();
+    else if (allPlayed()) onOk();
   } else if (e.key === 'Backspace') {
     e.preventDefault();
     onUndo();
   }
 });
-newMatch();
 window.addEventListener('resize', () => { if (G) render(); });
+
+newMatch();
 </script>
 </body>
 </html>
