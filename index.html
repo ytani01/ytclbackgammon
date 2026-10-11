@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>バックギャモン</title>
+<!-- スマホのホーム画面に追加して使うための設定(このファイル単体で開いたときは無視される) -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#2b3a2e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="バックギャモン">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <style>
   :root { --bg:#2b3a2e; --panel:#1f2a22; --text:#f2efe6; --accent:#e0b04a; color-scheme: dark; }
   * { box-sizing: border-box; }
@@ -232,132 +240,191 @@ const BG = (() => {
   }
 
   // ---------- コンピューターの思考 ----------
-  // 相手の駒(自分の番号で x)から見た距離の一覧に対し、36 通り中何通りで当たるか
-  function shotsAt(dists) {
-    if (!dists.length) return 0;
-    let cnt = 0;
-    for (let a = 1; a <= 6; a++) for (let b = 1; b <= 6; b++) {
-      const reach = a === b ? [a, 2 * a, 3 * a, 4 * a] : [a, b, a + b];
-      if (dists.some(x => reach.includes(x))) cnt++;
+  // 局面の評価は、自己対戦(TD 学習)で鍛えた小さなニューラルネットワークで行う。
+  // 入力は「X が動かし終わって相手がこれから振る」局面、出力は X から見た
+  // [勝つ, ギャモン勝ち, バックギャモン勝ち, ギャモン負け, バックギャモン負け] の確率。
+  const NET = { H: 40, sc: [0.000080859174, 0.000034660188, 0.00014358086, 0.000047735449], d: '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' };
+  const NI = 200, NO = 5, NH = NET.H;
+  const W1 = new Float32Array(NH * NI), B1 = new Float32Array(NH), W2 = new Float32Array(NO * NH), B2 = new Float32Array(NO);
+  (() => {
+    const bin = atob(NET.d), q = new Int16Array(bin.length / 2);
+    for (let i = 0; i < q.length; i++) q[i] = bin.charCodeAt(2 * i) | (bin.charCodeAt(2 * i + 1) << 8);
+    let k = 0;
+    [W1, B1, W2, B2].forEach((a, t) => { for (let i = 0; i < a.length; i++) a[i] = q[k++] * NET.sc[t]; });
+  })();
+
+  const X_IN = new Float32Array(NI), NZ = new Int32Array(NI), HID = new Float32Array(NH);
+  const sigmoid = x => 1 / (1 + Math.exp(-x));
+
+  // 各ポイントの駒数を 4 つの入力(1 個以上・2 個以上・3 個以上・4 個目からの数)にし、バー・上がり・ピップ数などを加える
+  function encode(s, X) {
+    const me = s[X], op = s[other(X)], x = X_IN;
+    let k = 0;
+    for (const a of [me, op]) {
+      for (let p = 1; p <= 24; p++) {
+        const n = a[p];
+        x[k++] = n >= 1 ? 1 : 0; x[k++] = n >= 2 ? 1 : 0; x[k++] = n >= 3 ? 1 : 0; x[k++] = n > 3 ? (n - 3) / 2 : 0;
+      }
+      x[k++] = a[BAR] / 2; x[k++] = a[OFF] / 15;
     }
-    return cnt;
+    const pm = pip(me), po = pip(op);
+    x[k++] = pm / 167; x[k++] = po / 167;
+    x[k++] = backmost(me) + backmost(op) > 25 ? 1 : 0; // まだ接触がある
+    x[k++] = (pm - po) / 50;
+    return x;
+  }
+  function backmost(a) { for (let p = BAR; p >= 1; p--) if (a[p]) return p; return 0; }
+
+  function netEval(s, X) {
+    const r = result(s);
+    if (r) {
+      const g = r.points >= 2 ? 1 : 0, b = r.points === 3 ? 1 : 0;
+      return r.winner === X ? [1, g, b, 0, 0] : [0, 0, 0, g, b];
+    }
+    const x = encode(s, X);
+    let m = 0;
+    for (let i = 0; i < NI; i++) if (x[i] !== 0) NZ[m++] = i;
+    for (let j = 0; j < NH; j++) {
+      let t = B1[j];
+      const off = j * NI;
+      for (let u = 0; u < m; u++) { const i = NZ[u]; t += W1[off + i] * x[i]; }
+      HID[j] = sigmoid(t);
+    }
+    const o = [0, 0, 0, 0, 0];
+    for (let k = 0; k < NO; k++) {
+      let t = B2[k];
+      const off = k * NH;
+      for (let j = 0; j < NH; j++) t += W2[off + j] * HID[j];
+      o[k] = sigmoid(t);
+    }
+    return o;
   }
 
-  const HOME_W = [0, 1.5, 2, 3.5, 4.5, 5, 5];
-  const PRIME_W = [0, 0, 1, 3, 6, 10, 15];
+  // 1 点賭けたときの期待値(ギャモン 2 点、バックギャモン 3 点)
+  const equity = o => 2 * o[0] - 1 + o[1] - o[3] + o[2] - o[4];
 
-  // pl から見た局面の良さ(大きいほど良い)
-  function evaluate(s, pl) {
-    const me = s[pl], op = s[other(pl)];
-    let e = pip(op) - pip(me);
-    let myBack = 0;
-    for (let p = BAR; p >= 1; p--) if (me[p]) { myBack = p; break; }
-    const oppXs = [];
-    for (let q = 1; q <= BAR; q++) if (op[q]) oppXs.push(25 - q);
-    const contact = oppXs.length > 0 && Math.min(...oppXs) < myBack;
-    e += me[OFF] * 3;
-    if (!contact) {
-      for (let p = 7; p <= 24; p++) e -= me[p] * 0.5; // 早く家に入れる
-      return e;
-    }
-    // ブロット(1 個だけの駒)の危険度
-    for (let p = 1; p <= 24; p++) {
-      if (me[p] !== 1) continue;
-      const dists = oppXs.filter(x => x < p).map(x => p - x);
-      e -= (shotsAt(dists) / 36) * (25 - p + 8);
-    }
-    // 作ったポイント
-    let run = 0, best = 0;
-    for (let p = 1; p <= 24; p++) {
-      if (me[p] >= 2) {
-        if (p <= 6) e += HOME_W[p];
-        else if (p === 7) e += 3.5;
-        else if (p <= 9) e += 2.5;
-        else if (p >= 18) e += 2;
-        else e += 1;
-        run++; best = Math.max(best, run);
-        if (me[p] > 4) e -= (me[p] - 4) * 0.7;
-      } else run = 0;
-    }
-    e += PRIME_W[Math.min(best, 6)];
-    // 相手がバーにいるときは、自分のインナーボードが固いほど良い
-    if (op[BAR] > 0) {
-      let closed = 0;
-      for (let p = 1; p <= 6; p++) if (me[p] >= 2) closed++;
-      e += op[BAR] * (3 + closed * 1.5);
-    }
-    return e;
-  }
-
-  // ギャモン・バックギャモン負けの危険(手を選ぶときだけ使う)。
-  // 相手が上がりに近いほど重く、ブレ(noise)より十分大きくして必ず優先させる。
-  function lossDanger(s, pl) {
-    const me = s[pl], op = s[other(pl)];
-    if (me[OFF] > 0) return 0;
-    const f = Math.min(1, Math.max(0, (90 - pip(op)) / 60)) + (allHome(op) ? 0.5 : 0);
-    if (f <= 0) return 0;
-    let d = 0;
-    for (let p = 7; p <= BAR; p++) {
-      if (!me[p]) continue;
-      d += me[p] * (p - 6) * 1.5;                      // 家に入っていない駒(ギャモン)
-      if (p >= 19) d += me[p] * (40 + (p - 18) * 4);    // 相手のインナーボードやバーの駒(バックギャモン)
-    }
-    d += 20; // 1 個も上がっていない
-    return d * f;
-  }
-
-  const moveScore = (st, pl) => evaluate(st, pl) - lossDanger(st, pl);
-
-  // 初級・中級: 1 手先だけを評価する。noise で少しブレさせて強くなりすぎないようにする
-  function chooseMove(s, pl, dice, noise = 5, rnd = Math.random) {
-    let best = null, bestV = -Infinity;
-    const cache = new Map();
+  // pl が動かせる手順を、できあがる局面ごとに 1 つずつ
+  function uniqueSequences(s, pl, dice) {
+    const seen = new Set(), res = [];
     for (const q of legalSequences(s, pl, dice)) {
       const key = posKey(q.state);
-      let v = cache.get(key);
-      if (v === undefined) { v = moveScore(q.state, pl) + rnd() * noise; cache.set(key, v); }
+      if (!seen.has(key)) { seen.add(key); res.push(q); }
+    }
+    return res;
+  }
+
+  // 0 手読み: 動かしたあとの局面をそのまま評価して、pl にとって一番良い手順(とその値)
+  function bestReply(s, pl, dice) {
+    let best = null, bestV = -Infinity;
+    for (const q of uniqueSequences(s, pl, dice)) {
+      const v = equity(netEval(q.state, pl));
+      if (v > bestV) { bestV = v; best = q; }
+    }
+    return { q: best, v: bestV };
+  }
+
+  // 相手が 21 通りの目それぞれで最善に応じたあとの、pl から見た平均の値。
+  // deep = true なら、さらにそのあと pl が 21 通りの目で最善に動いた局面まで読む。
+  // 深く読むときは、相手の目を 1 つ調べるごとに yield する(画面を固まらせないため)
+  const ROLLS = [];
+  for (let a = 1; a <= 6; a++) for (let b = a; b <= 6; b++) ROLLS.push({ dice: [a, b], w: a === b ? 1 : 2 });
+  // expired() が true になったら読みをやめて null を返す
+  function* lookahead(s, pl, deep, expired = () => false) {
+    const op = other(pl);
+    if (result(s)) return equity(netEval(s, pl));
+    let total = 0;
+    for (const r of ROLLS) {
+      if (deep) { yield; if (expired()) return null; }
+      const rep = bestReply(s, op, r.dice);
+      let v;
+      if (!deep || result(rep.q.state)) v = -rep.v;
+      else {
+        v = 0;
+        for (const r2 of ROLLS) v += r2.w * bestReply(rep.q.state, pl, r2.dice).v;
+        v /= 36;
+      }
+      total += r.w * v;
+    }
+    return total / 36;
+  }
+
+  // 初級・中級: 0 手読み。noise で少しブレさせて強くなりすぎないようにする。
+  // ギャモン・バックギャモン負けを避けられるときは、ブレがあっても必ず避ける
+  function chooseMove(s, pl, dice, noise = 0, rnd = Math.random) {
+    let best = null, bestV = -Infinity;
+    for (const q of uniqueSequences(s, pl, dice)) {
+      const v = equity(netEval(q.state, pl)) - lossDanger(q.state, pl) * noise + rnd() * noise;
       if (v > bestV) { bestV = v; best = q; }
     }
     return best;
   }
 
-  // 上級: 1 手先の候補上位を、相手の 21 通りの目への最善応手まで読んで比べる
-  function chooseMoveDeep(s, pl, dice, top = 6) {
-    const op = other(pl);
-    const seen = new Map();
-    for (const q of legalSequences(s, pl, dice)) {
-      const key = posKey(q.state);
-      if (!seen.has(key)) seen.set(key, { q, v: moveScore(q.state, pl) });
+  // ギャモン・バックギャモン負けの危険(0 以上。ブレの大きさに掛けて使う)
+  function lossDanger(s, pl) {
+    const me = s[pl], op = s[other(pl)];
+    if (me[OFF] > 0) return 0;
+    const f = Math.min(1, Math.max(0, (90 - pip(op)) / 60)) + (allHome(op) ? 0.5 : 0);
+    if (f <= 0) return 0;
+    let d = 1;
+    for (let p = 7; p <= BAR; p++) {
+      if (!me[p]) continue;
+      d += me[p] * (p - 6) * 0.08;                    // 家に入っていない駒(ギャモン)
+      if (p >= 19) d += me[p] * (2 + (p - 18) * 0.2);  // 相手のインナーボードやバーの駒(バックギャモン)
     }
-    const cands = [...seen.values()].sort((a, b) => b.v - a.v).slice(0, top);
-    if (cands.length === 1) return cands[0].q;
-    let best = null, bestV = -Infinity;
-    for (const c of cands) {
-      if (c.q.state[pl][OFF] === 15) return c.q; // 勝ちが決まる手
-      let total = 0;
-      for (let a = 1; a <= 6; a++) for (let b = a; b <= 6; b++) {
-        let reply = null, rv = -Infinity;
-        for (const r of legalSequences(c.q.state, op, [a, b])) {
-          const v = moveScore(r.state, op);
-          if (v > rv) { rv = v; reply = r; }
-        }
-        const st = reply.state;
-        total += (a === b ? 1 : 2) * (st[op][OFF] === 15 ? -200 : moveScore(st, pl));
+    return d * f;
+  }
+
+  // 上級: 候補を段階的に絞りながら深く読む。
+  //   0 手読みで上位 8 手 → 相手の応手まで読んで上位 3 手 → さらに自分の次の手まで読んで決める。
+  // 時間がかかるので、少しずつ進める generator にしている(yield のたびに画面へ処理を返す)。
+  // timeLimit(ミリ秒)を超えたら、そこまでで一番良い手にする
+  function* thinkDeep(s, pl, dice, timeLimit = Infinity, now = () => Date.now()) {
+    const start = now(), expired = () => now() - start > timeLimit;
+    let cands = uniqueSequences(s, pl, dice).map(q => ({ q, v: equity(netEval(q.state, pl)) }));
+    if (cands.length <= 1) return cands[0].q;
+    const win = cands.find(c => result(c.q.state));
+    if (win) return win.q;
+    cands.sort((a, b) => b.v - a.v);
+    for (const [keep, deep] of [[8, false], [3, true]]) {
+      cands = cands.slice(0, keep);
+      for (const c of cands) {
+        yield;
+        if (expired()) return cands[0].q;
+        const v = yield* lookahead(c.q.state, pl, deep, expired);
+        if (v === null) return cands[0].q; // 時間切れ: 前の段階で一番良かった手
+        c.v = v;
       }
-      const v = total / 36;
-      if (v > bestV) { bestV = v; best = c.q; }
+      cands.sort((a, b) => b.v - a.v);
     }
-    return best;
+    return cands[0].q;
   }
 
-  // 手番(これからダイスを振る)の pl が勝つ確率のおおまかな見積もり
-  function winProb(s, pl) {
-    const x = (evaluate(s, pl) - evaluate(s, other(pl))) / 2 + 4;
-    const avg = (pip(s.h) + pip(s.c)) / 2;
-    return 1 / (1 + Math.exp(-x / (0.08 * avg + 2)));
+  // generator を最後まで一気に進める(テスト用)
+  function chooseMoveDeep(s, pl, dice) {
+    const it = thinkDeep(s, pl, dice);
+    let r;
+    do { r = it.next(); } while (!r.done);
+    return r.value;
   }
 
-  return { BAR, OFF, initial, clone, other, diceList, singleMoves, applyMove, legalSequences, pip, lossValue, result, evaluate, chooseMove, chooseMoveDeep, winProb };
+  // これからダイスを振る pl の、勝ち・ギャモンなどの確率(21 通りの目で最善に動いた平均)
+  function preRoll(s, pl) {
+    const o = [0, 0, 0, 0, 0];
+    for (const r of ROLLS) {
+      let best = null, bestV = -Infinity;
+      for (const q of uniqueSequences(s, pl, r.dice)) {
+        const e = netEval(q.state, pl), v = equity(e);
+        if (v > bestV) { bestV = v; best = e; }
+      }
+      for (let k = 0; k < NO; k++) o[k] += r.w * best[k] / 36;
+    }
+    return { p: o, eq: equity(o) };
+  }
+
+  // 手番(これからダイスを振る)の pl が勝つ確率
+  function winProb(s, pl) { return preRoll(s, pl).p[0]; }
+
+  return { BAR, OFF, initial, clone, other, diceList, singleMoves, applyMove, legalSequences, pip, lossValue, result, netEval, equity, chooseMove, thinkDeep, chooseMoveDeep, preRoll, winProb };
 })();
 // ==LOGIC END==
 
@@ -379,12 +446,14 @@ const roll2 = () => [rnd(), rnd()];
 
 // コンピューターの強さ。noise は手の評価に足すブレ、cubeNoise はダブル判断のブレ
 const LEVELS = {
-  easy: { name: '初級', noise: 25, cubeNoise: 0.2, deep: false },
-  normal: { name: '中級', noise: 5, cubeNoise: 0.06, deep: false },
+  easy: { name: '初級', noise: 0.3, cubeNoise: 0.5, deep: false },
+  normal: { name: '中級', noise: 0.1, cubeNoise: 0.2, deep: false },
   hard: { name: '上級', noise: 0, cubeNoise: 0, deep: true },
 };
 
 // 待ち時間(ミリ秒)
+// 上級が 1 手に使う時間の上限(ミリ秒)。ふだんは数秒以内に読み終わる
+const THINK_LIMIT = 6000;
 const DELAY = { openingShow: 1200, cpuThink: 900, cpuStep: 600, cpuNoMove: 1400, humanNoMove: 1800, cpuDecide: 1300, confirmTap: 4000 };
 
 // マッチ全体の状態
@@ -632,10 +701,8 @@ function cpuRoll(dice) {
   G.played = [];
   setMsg(`コンピューターの番:ダイス ${G.dice[0]}・${G.dice[1]}`);
   render();
-  later(DELAY.cpuThink, () => {
-    const L = LEVELS[M.level];
-    const seq = L.deep ? BG.chooseMoveDeep(G.state, 'c', G.dice) : BG.chooseMove(G.state, 'c', G.dice, L.noise);
-    if (!seq || !seq.moves.length) {
+  later(DELAY.cpuThink, () => cpuThink(seq => {
+    if (!seq.moves.length) {
       setMsg(`コンピューター:ダイス ${G.dice[0]}・${G.dice[1]}、動かせる手がありません。`);
       later(DELAY.cpuNoMove, endCpu);
       return;
@@ -654,7 +721,26 @@ function cpuRoll(dice) {
       }
     };
     step();
-  });
+  }));
+}
+
+// コンピューターが手を決めて done(手順) を呼ぶ。上級は時間がかかるので、
+// 少しずつ考えて合間に画面へ処理を返し(固まらないように)、その間「考え中…」と出す
+function cpuThink(done) {
+  const L = LEVELS[M.level];
+  if (!L.deep) { done(BG.chooseMove(G.state, 'c', G.dice, L.noise)); return; }
+  const msg = `コンピューターの番:ダイス ${G.dice[0]}・${G.dice[1]}`;
+  setMsg(msg + '(考え中…)');
+  const it = BG.thinkDeep(G.state, 'c', G.dice, THINK_LIMIT);
+  const slice = () => {
+    const t = Date.now();
+    let r;
+    do { r = it.next(); } while (!r.done && Date.now() - t < 40);
+    if (!r.done) { later(0, slice); return; }
+    setMsg(msg);
+    done(r.value);
+  };
+  slice();
 }
 
 function endCpu() {
@@ -672,18 +758,24 @@ function canDouble(pl) {
   return !G.crawford && (G.cube.owner === null || G.cube.owner === pl) && M.score[pl] + G.cube.value < M.len;
 }
 
+// キューブの判断は、これから振る側の期待値(1 点あたり、ギャモン込み)で決める。
+// 強さが低いほど判断がぶれる(cubeNoise はブレの幅)
+const cubeNoise = () => (Math.random() - 0.5) * LEVELS[M.level].cubeNoise;
+
 function cpuTakes() {
   if (M.score.h + G.cube.value >= M.len) return true; // パスするとマッチに負けるので必ずテイク
-  const p = 1 - BG.winProb(G.state, 'h') + (Math.random() - 0.5) * LEVELS[M.level].cubeNoise;
-  return p >= 0.24;
+  // あなたの期待値が 0.6 未満ならテイク(パスは -1 点、テイクは倍。キューブを持てる分だけ 0.5 より広く取る)
+  return BG.preRoll(G.state, 'h').eq + cubeNoise() < 0.6;
 }
 
 function cpuWantsDouble() {
   if (!canDouble('c')) return false;
   // クロフォード後、相手があと 1 点のときはすぐダブルする(負けても失う点は同じ)
   if (M.crawfordDone && !G.crawford && M.score.h === M.len - 1) return true;
-  const p = BG.winProb(G.state, 'c') + (Math.random() - 0.5) * LEVELS[M.level].cubeNoise;
-  return p >= 0.70;
+  // 十分有利ならダブル。ただしギャモンが十分ねらえるほど有利なら、ダブルせずに続ける
+  const e = BG.preRoll(G.state, 'c').eq + cubeNoise();
+  return e >= 0.5 && e <= 1.0;
+
 }
 
 function onDouble() {
@@ -1043,6 +1135,10 @@ document.addEventListener('keydown', e => {
   }
 });
 window.addEventListener('resize', () => { if (G) render(); });
+// ホーム画面に追加したとき、通信がなくても遊べるようにする(manifest があり https で開いたときだけ)
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost') && document.querySelector('link[rel="manifest"]')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
 
 newMatch();
 </script>
