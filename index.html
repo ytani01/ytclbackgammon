@@ -123,7 +123,7 @@
     ・キーボード:<b>Enter</b> でダイスを振る/確定、<b>Backspace</b> で戻す。<br>
     ・負けた側が 1 個も上げていなければギャモン(2 点)、さらに相手のインナーボードかバーに駒が残っていればバックギャモン(3 点)です。<br>
     ・<b>マッチ</b>:下で長さを選んで「新しいマッチ」。先に指定の点数に達したほうがマッチの勝ちです。<br>
-    ・<b>ダブリングキューブ</b>:自分の番でダイスを振る前に盤の真ん中(または自分の側)のキューブをタップすると、点数の倍率を倍にするよう申し込めます。相手はテイク(倍で続行、キューブは相手のものに)かパス(その時点の点数で負け)を選びます。キューブを持っている側だけが次にダブルできます。<br>
+    ・<b>ダブリングキューブ</b>:自分の番でダイスを振る前に盤の真ん中(または自分の側)のキューブをタップすると、点数の倍率を倍にするよう申し込めます。相手はテイク(倍で続行、キューブは相手のものに)かパス(その時点の点数で負け)を選びます。コンピューターにダブルされたら、真ん中の大きなキューブをタップでテイク、「パス」ボタンでパスです。キューブを持っている側だけが次にダブルできます。<br>
     ・<b>ピップ数</b>:盤の右端(トレイの真ん中)に、上がコンピューター(黒)、下があなた(白)の残り歩数を表示します。右上のチェックで表示を切り替えられます。<br>
     ・<b>投了</b>:「投了」を 2 回押すと、その時点の局面で負けた扱い(1 個も上げていなければギャモン、さらに相手陣地かバーに駒があればバックギャモン、それぞれキューブ倍)になります。<br>
     ・<b>クロフォードルール</b>:どちらかが初めて「あと 1 点で勝ち」になった直後の 1 ゲームは、どちらもダブルできません。
@@ -623,7 +623,7 @@ function cpuTurn() {
     const v = G.cube.value;
     G.phase = 'humanTake';
     G.offer = { value: v * 2, by: 'c' };
-    setMsg(`<b>コンピューターがダブルしてきました(キューブ ${v} → ${v * 2})。</b><br>テイクすると続行し、このゲームは ${v * 2} 点以上になります。パスするとここで ${v} 点を失います。`);
+    setMsg(`<b>コンピューターがダブルしてきました(キューブ ${v} → ${v * 2})。</b><br><b>キューブをタップでテイク</b>(このゲームは ${v * 2} 点以上に)。「パス」を押すとここで ${v} 点を失います。`);
     render();
     return;
   }
@@ -701,6 +701,7 @@ svg.addEventListener('click', e => {
   if (act) {
     if (act.dataset.act === 'roll') onRoll();
     else if (act.dataset.act === 'double') onDouble();
+    else if (act.dataset.act === 'take') onTake();
     return;
   }
   if (G.phase !== 'humanMove') return;
@@ -807,10 +808,13 @@ function render() {
   // ダブルの申し込み中:新しい値のキューブを盤の真ん中に大きく表示
   if (G.offer) {
     const cx = BX + BW / 2, sz = 84;
-    s += `<rect x="${cx - 72}" y="${MID - sz / 2 - 30}" width="144" height="${sz + 42}" rx="10" fill="#1a1208" opacity="0.8" pointer-events="none"/>`;
+    s += `<rect x="${cx - 72}" y="${MID - sz / 2 - 30}" width="144" height="${sz + (G.phase === 'humanTake' ? 62 : 42)}" rx="10" fill="#1a1208" opacity="0.8" pointer-events="none"/>`;
     s += `<text ${tx(cx)} y="${MID - sz / 2 - 8}" text-anchor="middle" font-size="16" font-weight="bold" fill="#ffd23f" pointer-events="none">${G.offer.by === 'h' ? 'あなたのダブル' : 'ダブル!'}</text>`;
     s += `<rect x="${cx - sz / 2}" y="${MID - sz / 2}" width="${sz}" height="${sz}" rx="10" fill="#f7f3e8" stroke="#ffd23f" stroke-width="4" pointer-events="none"/>`;
     s += `<text ${tx(cx)} y="${MID + 17}" text-anchor="middle" font-size="${G.offer.value >= 10 ? 40 : 48}" font-weight="bold" fill="#222" pointer-events="none">${G.offer.value}</text>`;
+    if (G.phase === 'humanTake') {
+      s += `<text ${tx(cx)} y="${MID + sz / 2 + 2 + 14}" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff6dc" pointer-events="none">タップでテイク</text>`;
+    }
   }
   // 上がった駒(トレイ)
   for (let i = 0; i < st.h[0]; i++) s += `<rect x="${TX0 + 8}" y="${BOT - 6 - (i + 1) * 13}" width="56" height="11" rx="3" fill="#f5f0e3" stroke="#6b6457"/>`;
@@ -854,6 +858,10 @@ function render() {
     s += `<text ${tx(cx)} y="${cy + 12}" text-anchor="middle" font-size="17" font-weight="bold" fill="#fff6dc">振る</text>`;
     s += `</g>`;
   }
+  // ダブルされたとき:真ん中の大きなキューブをタップでテイク
+  if (G.phase === 'humanTake' && G.offer) {
+    s += `<rect class="pt" data-act="take" x="${BX + BW / 2 - 72}" y="${MID - 72}" width="144" height="144" fill="transparent"/>`;
+  }
   // キューブ(ダブルできるときはタップでダブル)
   if (G.phase === 'humanRoll' && canDouble('h') && !G.offer) {
     const cy = G.cube.owner === 'h' ? BOT - 24 : G.cube.owner === 'c' ? TOP + 24 : MID;
@@ -868,7 +876,7 @@ function render() {
   show('btnDouble', false); // キューブをタップでダブル
   show('btnUndo', G.phase !== 'humanTake' && G.phase !== 'over');
   show('btnOk', G.phase !== 'humanTake' && G.phase !== 'over');
-  show('btnTake', G.phase === 'humanTake');
+  show('btnTake', false); // 真ん中のキューブをタップでテイク
   show('btnPass', G.phase === 'humanTake');
   show('btnNext', G.phase === 'over' && !M.over);
   show('btnResign', G.phase !== 'over' && G.phase !== 'opening');
