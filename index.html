@@ -114,7 +114,7 @@
   <details>
     <summary>遊び方</summary>
     あなたは白い駒です。24 → 1 の方向に進み、手前の 1〜6 のポイント(インナーボード)に全部集めてからトレイへ上げます(ベアオフ)。インナーボードを右と左のどちらに置くかは、下の「ボードの向き」で選べます。15 個全部を先に上げたほうの勝ちです。<br>
-    ・「ダイスを振る」を押してから、動かしたい駒をクリックし、緑色に光った行き先をクリックします。2 つの目を続けて使った先(ゾロ目なら 3〜4 回分先)も選べます。行き先が 1 か所しかない駒は、クリックしただけで動きます。<br>
+    ・右側のダイスカップをタップしてダイスを振り、動かしたい駒をクリックし、緑色に光った行き先をクリックします。2 つの目を続けて使った先(ゾロ目なら 3〜4 回分先)も選べます。行き先が 1 か所しかない駒は、クリックしただけで動きます。<br>
     ・ダイスの目は 1 つずつ使います。ゾロ目は同じ目を 4 回使えます。<br>
     ・相手の駒が 2 個以上あるポイントには止まれません。1 個だけのときは打ち取れ(ヒット)、その駒はバーに戻ります。<br>
     ・バーに駒があるときは、先にそれを相手のインナーボード(奥の 19〜24)へ入れる必要があります。<br>
@@ -123,7 +123,7 @@
     ・キーボード:<b>Enter</b> でダイスを振る/確定、<b>Backspace</b> で戻す。<br>
     ・負けた側が 1 個も上げていなければギャモン(2 点)、さらに相手のインナーボードかバーに駒が残っていればバックギャモン(3 点)です。<br>
     ・<b>マッチ</b>:下で長さを選んで「新しいマッチ」。先に指定の点数に達したほうがマッチの勝ちです。<br>
-    ・<b>ダブリングキューブ</b>:自分の番でダイスを振る前に「ダブル」を押すと、点数の倍率を倍にするよう申し込めます。相手はテイク(倍で続行、キューブは相手のものに)かパス(その時点の点数で負け)を選びます。キューブを持っている側だけが次にダブルできます。<br>
+    ・<b>ダブリングキューブ</b>:自分の番でダイスを振る前に盤の真ん中(または自分の側)のキューブをタップすると、点数の倍率を倍にするよう申し込めます。相手はテイク(倍で続行、キューブは相手のものに)かパス(その時点の点数で負け)を選びます。キューブを持っている側だけが次にダブルできます。<br>
     ・<b>ピップ数</b>:盤の右端(トレイの真ん中)に、上がコンピューター(黒)、下があなた(白)の残り歩数を表示します。右上のチェックで表示を切り替えられます。<br>
     ・<b>投了</b>:「投了」を 2 回押すと、その時点の局面で負けた扱い(1 個も上げていなければギャモン、さらに相手陣地かバーに駒があればバックギャモン、それぞれキューブ倍)になります。<br>
     ・<b>クロフォードルール</b>:どちらかが初めて「あと 1 点で勝ち」になった直後の 1 ゲームは、どちらもダブルできません。
@@ -427,7 +427,7 @@ function newGame() {
   const crawford = !M.crawfordDone && M.len > 1 && (M.score.h === M.len - 1 || M.score.c === M.len - 1);
   if (crawford) M.crawfordDone = true;
   G = { state: BG.initial(), phase: 'opening', dice: null, openDice: null, legal: [], played: [], turnStart: null, sel: null, steps: [], cube: { value: 1, owner: null }, crawford };
-  setMsg((crawford ? '<b>このゲームはクロフォードゲームです(どちらもダブルできません)。</b><br>' : '') + '「ダイスを振る」で先手を決めます。目の大きいほうが先手です。');
+  setMsg((crawford ? '<b>このゲームはクロフォードゲームです(どちらもダブルできません)。</b><br>' : '') + '右側のダイスカップをタップして先手を決めます。目の大きいほうが先手です。');
   render();
 }
 
@@ -477,7 +477,7 @@ function onDouble() {
     if (cpuTakes()) {
       G.cube = { value: v * 2, owner: 'c' };
       G.phase = 'humanRoll';
-      setMsg(`コンピューターはテイクしました(キューブ ${v * 2})。「ダイスを振る」を押してください。`);
+      setMsg(`コンピューターはテイクしました(キューブ ${v * 2})。ダイスカップをタップして振ってください。`);
       render();
     } else {
       endGame('h', v, 'ダブルにコンピューターがパスしました。');
@@ -666,8 +666,8 @@ function cpuRoll(dice) {
 
 function endCpu() {
   G.phase = 'humanRoll';
-  const dbl = canDouble('h') ? '(ダブルするなら振る前に「ダブル」)' : '';
-  setMsg((G.lastCpu ? G.lastCpu + '<br>' : '') + `あなたの番です。「ダイスを振る」を押してください${dbl}。`);
+  const dbl = canDouble('h') ? '(ダブルするなら振る前にキューブをタップ)' : '';
+  setMsg((G.lastCpu ? G.lastCpu + '<br>' : '') + `あなたの番です。ダイスカップをタップして振ってください${dbl}。`);
   G.lastCpu = null;
   render();
 }
@@ -696,6 +696,13 @@ function endGame(w, pts, reason) {
 }
 
 svg.addEventListener('click', e => {
+  // ダイスカップ = ダイスを振る、キューブ = ダブル
+  const act = e.target.closest('[data-act]');
+  if (act) {
+    if (act.dataset.act === 'roll') onRoll();
+    else if (act.dataset.act === 'double') onDouble();
+    return;
+  }
   if (G.phase !== 'humanMove') return;
   const t = e.target.closest('[data-pt]');
   if (!t) { return; }
@@ -836,13 +843,29 @@ function render() {
   }
   s += `<rect class="pt" data-pt="25" x="${BX}" y="${TOP}" width="${BW}" height="${BOT - TOP}" fill="transparent"/>`;
   s += `<rect class="pt" data-pt="0" x="${TX0}" y="${MID}" width="72" height="${BOT - MID}" fill="transparent"/>`;
+  // ダイスカップ(振る番のとき、画面の右側=あなたの側に表示。タップで振る)
+  if (G.phase === 'opening' || G.phase === 'humanRoll') {
+    const cx = M.flip ? LC - 1.5 * W : RC + 1.5 * W, cy = MID;
+    s += `<g class="pt" data-act="roll">`;
+    s += `<rect x="${cx - 40}" y="${cy - 46}" width="80" height="92" fill="transparent"/>`;
+    s += `<path d="M ${cx - 27} ${cy - 30} L ${cx + 27} ${cy - 30} L ${cx + 21} ${cy + 34} Q ${cx} ${cy + 42} ${cx - 21} ${cy + 34} Z" fill="#6b3d22" stroke="#ffd23f" stroke-width="3"/>`;
+    s += `<ellipse cx="${cx}" cy="${cy - 30}" rx="27" ry="8" fill="#3b2012" stroke="#ffd23f" stroke-width="3"/>`;
+    s += `<path d="M ${cx - 24} ${cy - 6} L ${cx + 24} ${cy - 6} M ${cx - 22} ${cy + 18} L ${cx + 22} ${cy + 18}" stroke="#8d5532" stroke-width="3"/>`;
+    s += `<text ${tx(cx)} y="${cy + 12}" text-anchor="middle" font-size="17" font-weight="bold" fill="#fff6dc">振る</text>`;
+    s += `</g>`;
+  }
+  // キューブ(ダブルできるときはタップでダブル)
+  if (G.phase === 'humanRoll' && canDouble('h') && !G.offer) {
+    const cy = G.cube.owner === 'h' ? BOT - 24 : G.cube.owner === 'c' ? TOP + 24 : MID;
+    s += `<rect class="pt" data-act="double" x="${BX + BW / 2 - 22}" y="${cy - 22}" width="44" height="44" rx="7" fill="transparent" stroke="#ffd23f" stroke-width="3" stroke-dasharray="5 3"/>`;
+  }
   svg.innerHTML = M.flip ? `<g transform="translate(${TOTAL},0) scale(-1,1)">${s}</g>` : s;
 
   $('sh').textContent = M.score.h; $('sc').textContent = M.score.c; $('target').textContent = `${M.len}点先取`;
   $('matchinfo').textContent = `${M.len} ポイントマッチ・${LEVELS[M.level].name}` + (G.crawford ? '・クロフォードゲーム' : '') + (G.cube.value > 1 ? `・キューブ ${G.cube.value}(${G.cube.owner === 'h' ? 'あなた' : 'コンピューター'}側)` : '');
   const show = (id, on) => { $(id).style.display = on ? '' : 'none'; };
-  show('btnRoll', G.phase !== 'humanTake' && G.phase !== 'over');
-  show('btnDouble', G.phase !== 'humanTake' && G.phase !== 'over');
+  show('btnRoll', false); // ダイスカップで振る
+  show('btnDouble', false); // キューブをタップでダブル
   show('btnUndo', G.phase !== 'humanTake' && G.phase !== 'over');
   show('btnOk', G.phase !== 'humanTake' && G.phase !== 'over');
   show('btnTake', G.phase === 'humanTake');
