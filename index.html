@@ -466,7 +466,12 @@ function onRoll() {
     G.openDice = { h, c };
     if (h === c) { setMsg(`あなた ${h}、コンピューター ${c}。同じ目なのでもう一度振ってください。`); render(); return; }
     if (h > c) {
-      startHumanTurn([h, c], `あなた ${h}、コンピューター ${c}。あなたが先手です。`);
+      // 先手決めの両方の目を少し見せてから、あなたの手番に入る
+      G.phase = 'openingShow';
+      setMsg(`あなた ${h}、コンピューター ${c}。あなたが先手です。`);
+      render();
+      const g = G;
+      setTimeout(() => { if (g === G) startHumanTurn([h, c], `あなた ${h}、コンピューター ${c}。あなたが先手です。`); }, 1200);
     } else {
       setMsg(`あなた ${h}、コンピューター ${c}。コンピューターが先手です。`);
       G.phase = 'cpu'; render();
