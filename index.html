@@ -465,23 +465,36 @@ function cpuWantsDouble() {
 function onDouble() {
   if (G.phase !== 'humanRoll' || !canDouble('h')) return;
   const v = G.cube.value;
-  if (cpuTakes()) {
-    G.cube = { value: v * 2, owner: 'c' };
-    setMsg(`ダブルしました。コンピューターはテイクしました(キューブ ${v * 2})。「ダイスを振る」を押してください。`);
-    render();
-  } else {
-    endGame('h', v, 'ダブルにコンピューターがパスしました。');
-  }
+  // 申し込んだキューブを盤の真ん中に大きく見せ、少し考えてから返事をする
+  G.offer = { value: v * 2, by: 'h' };
+  G.phase = 'cpuDecide';
+  setMsg(`ダブルしました(キューブ ${v} → ${v * 2})。コンピューターが考えています…`);
+  render();
+  const g = G;
+  setTimeout(() => {
+    if (g !== G) return;
+    G.offer = null;
+    if (cpuTakes()) {
+      G.cube = { value: v * 2, owner: 'c' };
+      G.phase = 'humanRoll';
+      setMsg(`コンピューターはテイクしました(キューブ ${v * 2})。「ダイスを振る」を押してください。`);
+      render();
+    } else {
+      endGame('h', v, 'ダブルにコンピューターがパスしました。');
+    }
+  }, 1300);
 }
 
 function onTake() {
   if (G.phase !== 'humanTake') return;
+  G.offer = null;
   G.cube = { value: G.cube.value * 2, owner: 'h' };
   cpuRoll();
 }
 
 function onPass() {
   if (G.phase !== 'humanTake') return;
+  G.offer = null;
   endGame('c', G.cube.value, 'ダブルをパスしました。');
 }
 
@@ -609,6 +622,7 @@ function cpuTurn() {
   if (cpuWantsDouble()) {
     const v = G.cube.value;
     G.phase = 'humanTake';
+    G.offer = { value: v * 2, by: 'c' };
     setMsg(`<b>コンピューターがダブルしてきました(キューブ ${v} → ${v * 2})。</b><br>テイクすると続行し、このゲームは ${v * 2} 点以上になります。パスするとここで ${v} 点を失います。`);
     render();
     return;
@@ -777,11 +791,19 @@ function render() {
     s += checker(BX + BW / 2, MID - 24 - R - i * Math.min(2 * R, (MID - TOP - 30 - 2 * R) / 2), 'c', last && st.c[25] > 3 ? st.c[25] : '', false);
   }
   // ダブリングキューブ(持ち主の側に置く。クロフォードゲームでは表示しない)
-  if (!G.crawford && M.len > 1) {
+  if (!G.crawford && M.len > 1 && !G.offer) {
     const cv = G.cube.value === 1 ? 64 : G.cube.value;
     const cy = G.cube.owner === 'h' ? BOT - 24 : G.cube.owner === 'c' ? TOP + 24 : MID;
     s += `<rect x="${BX + BW / 2 - 18}" y="${cy - 18}" width="36" height="36" rx="5" fill="#f7f3e8" stroke="#222" stroke-width="2"/>`;
     s += `<text ${tx(BX + BW / 2)} y="${cy + 7}" text-anchor="middle" font-size="${cv >= 10 ? 16 : 20}" font-weight="bold" fill="#222">${cv}</text>`;
+  }
+  // ダブルの申し込み中:新しい値のキューブを盤の真ん中に大きく表示
+  if (G.offer) {
+    const cx = BX + BW / 2, sz = 84;
+    s += `<rect x="${cx - 72}" y="${MID - sz / 2 - 30}" width="144" height="${sz + 42}" rx="10" fill="#1a1208" opacity="0.8" pointer-events="none"/>`;
+    s += `<text ${tx(cx)} y="${MID - sz / 2 - 8}" text-anchor="middle" font-size="16" font-weight="bold" fill="#ffd23f" pointer-events="none">${G.offer.by === 'h' ? 'あなたのダブル' : 'ダブル!'}</text>`;
+    s += `<rect x="${cx - sz / 2}" y="${MID - sz / 2}" width="${sz}" height="${sz}" rx="10" fill="#f7f3e8" stroke="#ffd23f" stroke-width="4" pointer-events="none"/>`;
+    s += `<text ${tx(cx)} y="${MID + 17}" text-anchor="middle" font-size="${G.offer.value >= 10 ? 40 : 48}" font-weight="bold" fill="#222" pointer-events="none">${G.offer.value}</text>`;
   }
   // 上がった駒(トレイ)
   for (let i = 0; i < st.h[0]; i++) s += `<rect x="${TX0 + 8}" y="${BOT - 6 - (i + 1) * 13}" width="56" height="11" rx="3" fill="#f5f0e3" stroke="#6b6457"/>`;
