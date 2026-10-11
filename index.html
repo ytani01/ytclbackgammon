@@ -113,6 +113,7 @@
     ・負けた側が 1 個も上げていなければギャモン(2 点)、さらに相手のインナーボードかバーに駒が残っていればバックギャモン(3 点)です。<br>
     ・<b>マッチ</b>:下で長さを選んで「新しいマッチ」。先に指定の点数に達したほうがマッチの勝ちです。<br>
     ・<b>ダブリングキューブ</b>:自分の番でダイスを振る前に「ダブル」を押すと、点数の倍率を倍にするよう申し込めます。相手はテイク(倍で続行、キューブは相手のものに)かパス(その時点の点数で負け)を選びます。キューブを持っている側だけが次にダブルできます。<br>
+    ・<b>ピップ数</b>:盤の右端(トレイの真ん中)に、上がコンピューター(赤)、下があなた(白)の残り歩数を表示します。右上のチェックで表示を切り替えられます。<br>
     ・<b>投了</b>:「投了」を 2 回押すと、その時点の局面で負けた扱い(1 個も上げていなければギャモン、さらに相手陣地かバーに駒があればバックギャモン、それぞれキューブ倍)になります。<br>
     ・<b>クロフォードルール</b>:どちらかが初めて「あと 1 点で勝ち」になった直後の 1 ゲームは、どちらもダブルできません。
   </details>
@@ -739,8 +740,15 @@ function render() {
     s += `<text ${tx(318)} y="${cy + 7}" text-anchor="middle" font-size="${cv >= 10 ? 16 : 20}" font-weight="bold" fill="#222">${cv}</text>`;
   }
   // 上がった駒(トレイ)
-  for (let i = 0; i < st.h[0]; i++) s += `<rect x="644" y="${BOT - 8 - (i + 1) * 14}" width="56" height="12" rx="3" fill="#f5f0e3" stroke="#6b6457"/>`;
-  for (let i = 0; i < st.c[0]; i++) s += `<rect x="644" y="${TOP + 8 + i * 14}" width="56" height="12" rx="3" fill="#8b1e1e" stroke="#3a0b0b"/>`;
+  for (let i = 0; i < st.h[0]; i++) s += `<rect x="644" y="${BOT - 6 - (i + 1) * 13}" width="56" height="11" rx="3" fill="#f5f0e3" stroke="#6b6457"/>`;
+  for (let i = 0; i < st.c[0]; i++) s += `<rect x="644" y="${TOP + 6 + i * 13}" width="56" height="11" rx="3" fill="#8b1e1e" stroke="#3a0b0b"/>`;
+  // ピップ数:トレイの仕切りのすぐ上(コンピューター)と下(あなた)に大きく表示
+  if ($('chkPips').checked) {
+    s += `<rect x="637" y="${MID - 40}" width="70" height="80" rx="4" fill="#2c1b0f"/>`;
+    s += `<text ${tx(672)} y="${MID - 28}" text-anchor="middle" font-size="11" fill="#cfc6b0">ピップ</text>`;
+    s += `<text ${tx(672)} y="${MID - 4}" text-anchor="middle" font-size="26" font-weight="bold" fill="#ff8a7a">${BG.pip(st.c)}</text>`;
+    s += `<text ${tx(672)} y="${MID + 32}" text-anchor="middle" font-size="26" font-weight="bold" fill="#fffaf0">${BG.pip(st.h)}</text>`;
+  }
   // ダイス
   if (G.openDice) {
     // あなたのダイスは向きに関係なく画面の右側、コンピューターは左側
@@ -778,7 +786,7 @@ function render() {
   $('btnResign').disabled = !canResign();
   if (!canResign() && typeof resignArmed !== 'undefined' && resignArmed) resetResign();
   $('btnDouble').disabled = !(G.phase === 'humanRoll' && canDouble('h'));
-  $('pips').textContent = $('chkPips').checked ? `ピップ数 あなた ${BG.pip(st.h)} / コンピューター ${BG.pip(st.c)}` : '';
+  $('pips').textContent = '';
   $('btnRoll').disabled = !(G.phase === 'opening' || G.phase === 'humanRoll');
   $('btnUndo').disabled = !(G.phase === 'humanMove' && G.played.length > 0);
   $('btnOk').disabled = !(G.phase === 'humanMove' && G.steps.length === 0);
