@@ -454,7 +454,7 @@ const LEVELS = {
 // 待ち時間(ミリ秒)
 // 上級が 1 手に使う時間の上限(ミリ秒)。ふだんは数秒以内に読み終わる
 const THINK_LIMIT = 6000;
-const DELAY = { openingShow: 1200, cpuThink: 900, cpuStep: 600, cpuNoMove: 1400, humanNoMove: 1800, cpuDecide: 1300, confirmTap: 4000 };
+const DELAY = { banner: 1500, openingShow: 1200, cpuThink: 900, cpuStep: 600, cpuNoMove: 1400, humanNoMove: 1800, cpuDecide: 1300, confirmTap: 4000 };
 
 // マッチ全体の状態
 const M = { level: 'normal', flip: false, len: 5, score: { h: 0, c: 0 }, crawfordDone: false, over: false };
@@ -475,6 +475,12 @@ function later(ms, fn) {
 }
 
 function setMsg(t) { $('msg').innerHTML = t; }
+
+// 盤の真ん中に PASS / TAKE を大きく出す。ms を渡すとその時間で消える(渡さなければゲームの終わりまで)
+function showBanner(text, sub, ms) {
+  const b = G.banner = { text, sub };
+  if (ms) later(ms, () => { if (G.banner === b) { G.banner = null; render(); } });
+}
 
 // ================= 盤の寸法 =================
 // 縦方向は固定。横幅はポイント幅 W で決まる(通常 46)。スマホ横画面では画面の形に合わせて W を広げる
@@ -540,6 +546,7 @@ function newGame() {
     legal: [], played: [], turnStart: null,        // あなたの番: 合法手順・動かした手・番の始めの局面
     steps: [], sel: null,                          // 次に動かせる 1 手の一覧・選んだ駒
     lastCpu: null,                                 // 直前のコンピューターの手(表示用)
+    banner: null,                                  // 盤の真ん中の大きな表示 { text, sub }(PASS / TAKE)
   };
   setMsg((crawford ? '<b>このゲームはクロフォードゲームです(どちらもダブルできません)。</b><br>' : '') + '右側のダイスカップをタップして先手を決めます。目の大きいほうが先手です。');
   render();
@@ -580,7 +587,7 @@ function rollOpening() {
 
 // ---------- あなたの番 ----------
 function startHumanTurn(dice, prefix) {
-  G.openDice = null;
+  G.openDice = null; G.banner = null;
   G.dice = dice;
   G.legal = BG.legalSequences(G.state, 'h', dice);
   G.played = []; G.turnStart = BG.clone(G.state); G.sel = null;
@@ -696,6 +703,7 @@ function cpuTurn() {
 
 // ダイスを振って(先手決めのときは dice が決まっている)、1 手ずつ見せながら動かす
 function cpuRoll(dice) {
+  G.banner = null;
   G.phase = 'cpu'; G.sel = null; G.steps = []; G.openDice = null;
   G.dice = dice || roll2();
   G.played = [];
@@ -791,9 +799,11 @@ function onDouble() {
     if (cpuTakes()) {
       G.cube = { value: v * 2, owner: 'c' };
       G.phase = 'humanRoll';
+      showBanner('TAKE', `コンピューターがテイク(キューブ ${v * 2})`, DELAY.banner);
       setMsg(`コンピューターはテイクしました(キューブ ${v * 2})。ダイスカップをタップして振ってください。`);
       render();
     } else {
+      showBanner('PASS', `コンピューターがパス:あなたに ${v} 点`);
       endGame('h', v, 'ダブルにコンピューターがパスしました。');
     }
   });
@@ -803,12 +813,18 @@ function onTake() {
   if (G.phase !== 'humanTake') return;
   G.offer = null;
   G.cube = { value: G.cube.value * 2, owner: 'h' };
-  cpuRoll();
+  // TAKE を少し見せてから、コンピューターがダイスを振る
+  G.phase = 'cpu';
+  showBanner('TAKE', `あなたがテイク(キューブ ${G.cube.value})`);
+  setMsg(`テイクしました(キューブ ${G.cube.value})。`);
+  render();
+  later(DELAY.banner, () => cpuRoll());
 }
 
 function onPass() {
   if (G.phase !== 'humanTake') return;
   G.offer = null;
+  showBanner('PASS', `あなたがパス:コンピューターに ${G.cube.value} 点`);
   endGame('c', G.cube.value, 'ダブルをパスしました。');
 }
 
@@ -965,6 +981,17 @@ function drawCube() {
   return s;
 }
 
+// PASS / TAKE の大きな表示(盤の真ん中。タップは下の盤に通す)
+function drawBanner() {
+  if (!G.banner) return '';
+  // スマホ横画面で盤が広がったときは、それに合わせて大きくする
+  const k = Math.min(W / 46, 1.6), cx = BX + BW / 2, w = 340 * k, h = 124 * k, pass = G.banner.text === 'PASS';
+  let s = `<g pointer-events="none"><rect x="${cx - w / 2}" y="${MID - h / 2}" width="${w}" height="${h}" rx="14" fill="#1a1208" opacity="0.88" stroke="${pass ? '#e0533d' : COLOR.hint}" stroke-width="4"/>`;
+  s += `<text ${tx(cx)} y="${MID + 14 * k}" text-anchor="middle" font-size="${64 * k}" font-weight="bold" letter-spacing="${6 * k}" fill="${pass ? '#ff6b52' : COLOR.hint}">${G.banner.text}</text>`;
+  s += `<text ${tx(cx)} y="${MID + 46 * k}" text-anchor="middle" font-size="${17 * k}" font-weight="bold" fill="#fff6dc">${G.banner.sub}</text>`;
+  return s + '</g>';
+}
+
 // トレイ:上がった駒と、仕切りの上下のピップ数(上がコンピューター、下があなた)
 function drawTray(st) {
   let s = '';
@@ -1062,7 +1089,7 @@ function render() {
   const st = G.state;
   const dice = drawDice();
   const s = drawBoard() + drawDestinations() + drawCheckers(st) + drawBar(st) + drawCube() + drawTray(st)
-    + dice.s + drawPointAreas() + drawCup() + dice.ok + drawCubeAreas();
+    + dice.s + drawPointAreas() + drawCup() + dice.ok + drawCubeAreas() + drawBanner();
   svg.innerHTML = M.flip ? `<g transform="translate(${TOTAL},0) scale(-1,1)">${s}</g>` : s;
   updatePanel();
 }
