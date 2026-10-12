@@ -34,6 +34,13 @@
   /* 盤は幅いっぱい。ただし PC では下の操作ボタンまで 1 画面に収まる高さに抑える */
   #board { width: min(100%, calc((100vh - 170px) * 1.3086)); min-width: min(100%, 320px); height: auto; margin: 0 auto; display:block; user-select:none; -webkit-user-select:none; touch-action: manipulation; }
   .pt { cursor: pointer; }
+  /* ダイスカップ: タップできることがわかるよう縁をゆっくり光らせ、タップしたら振る動きをする */
+  #board .cup { transform-box: fill-box; transform-origin: 50% 85%; }
+  #board .cup .glow { animation: cupGlow 1.6s ease-in-out infinite alternate; }
+  #board .cup.shaking { animation: cupShake .45s ease-in-out; }
+  @keyframes cupGlow { from { opacity: .25; } to { opacity: .75; } }
+  @keyframes cupShake { 0% { transform: rotate(0); } 20% { transform: rotate(-14deg); } 40% { transform: rotate(13deg); } 60% { transform: rotate(-9deg); } 80% { transform: rotate(6deg); } 100% { transform: rotate(0); } }
+  @media (prefers-reduced-motion: reduce) { #board .cup .glow, #board .cup.shaking { animation: none; } }
 
   /* メッセージ・ボタン */
   #msg { min-height: 2.8em; margin: 4px 0; padding: 6px 10px; background: var(--panel); border-radius: 8px; line-height: 1.4; }
@@ -1018,16 +1025,36 @@ function drawDice() {
   return { s, ok };
 }
 
-// ダイスカップ(振る番のとき、画面の右側=あなたの側に表示。タップで振る)
+// ダイスカップ(振る番のとき、画面の右側=あなたの側に表示。タップで振る)。
+// 革張りのカップに金の縁と飾りのステッチ。大きさ(タップできる範囲)は 80×92
 function drawCup() {
   if (!canRoll()) return '';
-  const cx = M.flip ? LC - 1.5 * W : RC + 1.5 * W, cy = MID;
-  let s = `<g class="pt" data-act="roll">`;
+  const cx = M.flip ? LC - 1.5 * W : RC + 1.5 * W, cy = MID, top = cy - 30, bot = cy + 36;
+  // カップの側面上の高さ y での左右の幅(上が広く、下がすぼまる)
+  const half = y => 27 - (y - top) / (bot - top) * 6;
+  const band = (y, color) => `<path d="M ${cx - half(y)} ${y} Q ${cx} ${y + 7} ${cx + half(y)} ${y}" fill="none" stroke="${color}"`;
+  let s = `<defs>
+    <linearGradient id="cupLeather" x1="0" x2="1"><stop offset="0" stop-color="#2a140a"/><stop offset=".3" stop-color="#7a4221"/><stop offset=".45" stop-color="#9c5a30"/><stop offset=".7" stop-color="#6a361a"/><stop offset="1" stop-color="#24110a"/></linearGradient>
+    <linearGradient id="cupGold" x1="0" x2="1"><stop offset="0" stop-color="#8a6a2a"/><stop offset=".45" stop-color="#f1d58a"/><stop offset="1" stop-color="#7a5a20"/></linearGradient>
+    <radialGradient id="cupMouth" cx=".5" cy=".35" r=".7"><stop offset="0" stop-color="#050302"/><stop offset="1" stop-color="#3b2012"/></radialGradient>
+  </defs>`;
+  s += `<g class="pt cup" data-act="roll">`;
   s += `<rect x="${cx - 40}" y="${cy - 46}" width="80" height="92" fill="transparent"/>`;
-  s += `<path d="M ${cx - 27} ${cy - 30} L ${cx + 27} ${cy - 30} L ${cx + 21} ${cy + 34} Q ${cx} ${cy + 42} ${cx - 21} ${cy + 34} Z" fill="#6b3d22" stroke="${COLOR.gold}" stroke-width="3"/>`;
-  s += `<ellipse cx="${cx}" cy="${cy - 30}" rx="27" ry="8" fill="#3b2012" stroke="${COLOR.gold}" stroke-width="3"/>`;
-  s += `<path d="M ${cx - 24} ${cy - 6} L ${cx + 24} ${cy - 6} M ${cx - 22} ${cy + 18} L ${cx + 22} ${cy + 18}" stroke="#8d5532" stroke-width="3"/>`;
-  s += `<text ${tx(cx)} y="${cy + 12}" text-anchor="middle" font-size="17" font-weight="bold" fill="#fff6dc">振る</text>`;
+  s += `<ellipse cx="${cx}" cy="${bot + 4}" rx="27" ry="5" fill="#000" opacity="0.35"/>`;                       // 影
+  s += `<ellipse class="glow" cx="${cx}" cy="${top}" rx="33" ry="12" fill="none" stroke="${COLOR.gold}" stroke-width="4"/>`; // 光る縁
+  // 側面(革)
+  s += `<path d="M ${cx - 27} ${top} L ${cx - 21} ${bot} Q ${cx} ${bot + 8} ${cx + 21} ${bot} L ${cx + 27} ${top} Z" fill="url(#cupLeather)" stroke="#1a0c05" stroke-width="1.5"/>`;
+  // 金の帯と、その内側のステッチ
+  for (const y of [top + 13, bot - 9]) {
+    s += band(y, 'url(#cupGold)') + ` stroke-width="4"/>`;
+    s += band(y - 5, '#e8cf8a') + ` stroke-width="1" stroke-dasharray="3 3" opacity="0.8"/>`;
+  }
+  // つや
+  s += `<path d="M ${cx - 17} ${top + 4} L ${cx - 13} ${bot - 2}" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity="0.12"/>`;
+  // 口(金の縁と暗い内側)
+  s += `<ellipse cx="${cx}" cy="${top}" rx="27" ry="8.5" fill="url(#cupMouth)" stroke="url(#cupGold)" stroke-width="3.5"/>`;
+  s += `<ellipse cx="${cx}" cy="${top}" rx="22" ry="5.5" fill="none" stroke="#e8cf8a" stroke-width="1" stroke-dasharray="3 3" opacity="0.7"/>`;
+  s += `<text ${tx(cx)} y="${cy + 12}" text-anchor="middle" font-size="16" font-weight="bold" fill="#f6e7c1" stroke="#2a140a" stroke-width="3" paint-order="stroke" letter-spacing="2">振る</text>`;
   return s + `</g>`;
 }
 
@@ -1104,11 +1131,23 @@ function confirmTap(btn) {
 const resignTap = confirmTap($('btnResign'));
 const newTap = confirmTap($('btnNew'));
 
+// ダイスカップを振る動きを少し見せてからダイスを振る(動きを減らす設定のときはすぐ振る)
+let shaking = false;
+function shakeRoll() {
+  const cup = svg.querySelector('.cup');
+  if (shaking || !canRoll()) return;
+  if (!cup || matchMedia('(prefers-reduced-motion: reduce)').matches) { onRoll(); return; }
+  shaking = true;
+  cup.classList.add('shaking');
+  later(450, () => { shaking = false; if (canRoll()) onRoll(); });
+  setTimeout(() => { shaking = false; }, 500); // 途中で新しいゲームになったとき用
+}
+
 svg.addEventListener('click', e => {
   // ダイスカップ = 振る、キューブ = ダブル/テイク、薄いダイス = 確定
   const act = e.target.closest('[data-act]');
   if (act) {
-    ({ roll: onRoll, double: onDouble, take: onTake, ok: onOk })[act.dataset.act]();
+    ({ roll: shakeRoll, double: onDouble, take: onTake, ok: onOk })[act.dataset.act]();
     return;
   }
   const t = e.target.closest('[data-pt]');
@@ -1144,7 +1183,7 @@ document.addEventListener('keydown', e => {
   if (e.ctrlKey || e.metaKey || e.altKey) return;
   if (e.key === 'Enter') {
     e.preventDefault();
-    if (canRoll()) onRoll();
+    if (canRoll()) shakeRoll();
     else if (allPlayed()) onOk();
   } else if (e.key === 'Backspace') {
     e.preventDefault();
