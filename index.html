@@ -87,7 +87,6 @@
   <div id="msg"></div>
   <!-- ダイスを振る・ダブル・テイク・パス・確定は盤の上をタップする -->
   <div id="controls">
-    <button id="btnUndo" class="sub" title="Backspace">戻す</button>
     <button id="btnNext">次のゲーム</button>
     <button id="btnResign" class="sub">投了</button>
   </div>
@@ -128,7 +127,7 @@
     ・相手の駒が 2 個以上あるポイントには止まれません。1 個だけのときは打ち取れ(ヒット)、その駒はバーに戻ります。<br>
     ・バーに駒があるときは、先にそれを相手のインナーボード(奥の 19〜24)へ入れる必要があります。<br>
     ・両方の目を使えるなら必ず両方使います。片方しか使えないときは、大きい目を使える限り大きい目を使います。<br>
-    ・全部動かしたら、薄くなったダイスをタップします。やり直したいときは「戻す」を押します。<br>
+    ・全部動かしたら、薄くなったダイスをタップします。やり直したいときは、ダイスの横の戻すボタン(↩)をタップします。<br>
     ・キーボード:<b>Enter</b> でダイスを振る/手番を終える、<b>Backspace</b> で戻す。<br>
     ・負けた側が 1 個も上げていなければギャモン(2 点)、さらに相手のインナーボードかバーに駒が残っていればバックギャモン(3 点)です。<br>
     ・<b>マッチ</b>:下で長さを選んで「新しいマッチ」。先に指定の点数に達したほうがマッチの勝ちです。<br>
@@ -891,7 +890,7 @@ function doPath(path) {
     G.played.push(m);
   }
   computeSteps();
-  if (G.steps.length === 0) setMsg('動かし終わりました。ダイスをタップすると手番を終えます(「戻す」でやり直し)。');
+  if (G.steps.length === 0) setMsg('動かし終わりました。ダイスをタップすると手番を終えます(ダイスの横の ↩ でやり直し)。');
   render();
 }
 
@@ -1266,46 +1265,64 @@ function drawDice() {
   const dl = BG.diceList(G.dice);
   const used = dl.map(() => false);
   for (const m of G.played) { const i = dl.findIndex((v, k) => v === m.die && !used[k]); if (i >= 0) used[i] = true; }
-  const total = dl.length * DIE_GAP - 8, x0 = diceX(pl) - total / 2;
+  // あなたが動かしている間は、ダイスの画面で右隣に戻すボタンを並べる(ゾロ目で入りきらないときはダイスを少し小さく)
+  const undo = G.phase === 'humanMove', n = dl.length;
+  const d = undo ? Math.min(DIE, (6 * W - 10 - UNDO_GAP - UNDO - (n - 1) * (DIE_GAP - DIE)) / n) : DIE, gap = d + DIE_GAP - DIE;
+  const total = n * gap - (DIE_GAP - DIE), row = total + (undo ? UNDO_GAP + UNDO : 0);
+  const start = diceX(pl) - row / 2, x0 = M.flip && undo ? start + UNDO_GAP + UNDO : start;
   let s = '', ok = '';
-  dl.forEach((v, k) => { s += die(x0 + k * DIE_GAP, MID - DIE / 2, v, DIE, used[k] || G.phase === 'humanNoMove', pl); });
+  dl.forEach((v, k) => { s += die(x0 + k * gap, MID - d / 2, v, d, used[k] || G.phase === 'humanNoMove', pl); });
   if (allPlayed()) {
-    s += `<text ${tx(x0 + total / 2)} y="${MID + DIE / 2 + 18}" text-anchor="middle" font-size="14" font-weight="bold" fill="${COLOR.pointGreen}">タップで確定</text>`;
-    ok = `<rect class="pt" data-act="ok" x="${x0 - 8}" y="${MID - DIE / 2 - 8}" width="${total + 16}" height="${DIE + 36}" rx="8" fill="transparent" stroke="${COLOR.gold}" stroke-width="3" stroke-dasharray="5 3"/>`;
+    s += `<text ${tx(x0 + total / 2)} y="${MID + d / 2 + 18}" text-anchor="middle" font-size="14" font-weight="bold" fill="${COLOR.pointGreen}">タップで確定</text>`;
+    ok = `<rect class="pt" data-act="ok" x="${x0 - 8}" y="${MID - d / 2 - 8}" width="${total + 16}" height="${d + 36}" rx="8" fill="transparent" stroke="${COLOR.gold}" stroke-width="3" stroke-dasharray="5 3"/>`;
   }
+  if (undo) ok += drawUndo(M.flip ? start + UNDO / 2 : start + row - UNDO / 2, G.played.length > 0);
   return { s, ok };
 }
 
+// 戻すボタン(丸に矢印のアイコン)。まだ 1 手も動かしていないときは薄く表示してタップできない
+const UNDO = 40, UNDO_GAP = 12;
+function drawUndo(x, on) {
+  // ボードを反転したときも矢印の向きは変えない
+  let s = `<g ${on ? 'class="pt" data-act="undo"' : 'pointer-events="none"'} opacity="${on ? 1 : 0.35}" transform="translate(${x} ${MID})${M.flip ? ' scale(-1,1)' : ''}">`;
+  s += `<title>戻す(Backspace)</title><circle r="${UNDO / 2}" fill="#1f2a22" stroke="${COLOR.gold}" stroke-width="2.5"/>`;
+  s += `<path d="M -9 -3 H 3 A 6.5 6.5 0 0 1 3 10 H -3 M -9 -3 L -3 -9 M -9 -3 L -3 3" fill="none" stroke="#f6e7c1" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`;
+  return s + '</g>';
+}
+
 // ダイスカップ(振る番のとき、画面の右側=あなたの側に表示。タップで振る)。
-// 革張りのカップに金の縁と飾りのステッチ。大きさ(タップできる範囲)は 80×92
+// 円筒形で、カーボン柄のレザーに赤いステッチ、内側は赤。大きさ(タップできる範囲)は 80×92
 function drawCup() {
   if (!canRoll()) return '';
-  const cx = M.flip ? LC - 1.5 * W : RC + 1.5 * W, cy = MID, top = cy - 30, bot = cy + 36;
-  // カップの側面上の高さ y での左右の幅(上が広く、下がすぼまる)
-  const half = y => 27 - (y - top) / (bot - top) * 6;
-  const band = (y, color) => `<path d="M ${cx - half(y)} ${y} Q ${cx} ${y + 7} ${cx + half(y)} ${y}" fill="none" stroke="${color}"`;
+  const cx = M.flip ? LC - 1.5 * W : RC + 1.5 * W, cy = MID, top = cy - 30, bot = cy + 36, r = 25, ry = 8;
+  // 側面の高さ y を通る横の曲線(手前にふくらむ)
+  const ring = (y, attrs) => `<path d="M ${cx - r} ${y} A ${r} ${ry} 0 0 0 ${cx + r} ${y}" fill="none" ${attrs}/>`;
+  const RED = '#e2232b', stitch = `stroke="${RED}" stroke-width="1.2" stroke-dasharray="3 2.5"`;
+  const side = `M ${cx - r} ${top} L ${cx - r} ${bot} A ${r} ${ry} 0 0 0 ${cx + r} ${bot} L ${cx + r} ${top} Z`;
   let s = `<defs>
-    <linearGradient id="cupLeather" x1="0" x2="1"><stop offset="0" stop-color="#2a140a"/><stop offset=".3" stop-color="#7a4221"/><stop offset=".45" stop-color="#9c5a30"/><stop offset=".7" stop-color="#6a361a"/><stop offset="1" stop-color="#24110a"/></linearGradient>
-    <linearGradient id="cupGold" x1="0" x2="1"><stop offset="0" stop-color="#8a6a2a"/><stop offset=".45" stop-color="#f1d58a"/><stop offset="1" stop-color="#7a5a20"/></linearGradient>
-    <radialGradient id="cupMouth" cx=".5" cy=".35" r=".7"><stop offset="0" stop-color="#050302"/><stop offset="1" stop-color="#3b2012"/></radialGradient>
+    <pattern id="cupCarbon" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#141414"/><rect width="3" height="3" fill="#2e2e2e"/><rect x="3" y="3" width="3" height="3" fill="#262626"/></pattern>
+    <linearGradient id="cupShade" x1="0" x2="1"><stop offset="0" stop-color="#000" stop-opacity=".8"/><stop offset=".35" stop-color="#fff" stop-opacity=".12"/><stop offset=".5" stop-color="#fff" stop-opacity=".04"/><stop offset="1" stop-color="#000" stop-opacity=".85"/></linearGradient>
+    <radialGradient id="cupInside" cx=".5" cy=".3" r=".7"><stop offset="0" stop-color="#2a0405"/><stop offset="1" stop-color="#a3141b"/></radialGradient>
+    <clipPath id="cupSide"><path d="${side}"/></clipPath>
   </defs>`;
   s += `<g class="pt cup" data-act="roll">`;
   s += `<rect x="${cx - 40}" y="${cy - 46}" width="80" height="92" fill="transparent"/>`;
-  s += `<ellipse cx="${cx}" cy="${bot + 4}" rx="27" ry="5" fill="#000" opacity="0.35"/>`;                       // 影
+  s += `<ellipse cx="${cx}" cy="${bot + 4}" rx="${r + 2}" ry="6" fill="#000" opacity="0.35"/>`;                    // 影
   s += `<ellipse class="glow" cx="${cx}" cy="${top}" rx="33" ry="12" fill="none" stroke="${COLOR.gold}" stroke-width="4"/>`; // 光る縁
-  // 側面(革)
-  s += `<path d="M ${cx - 27} ${top} L ${cx - 21} ${bot} Q ${cx} ${bot + 8} ${cx + 21} ${bot} L ${cx + 27} ${top} Z" fill="url(#cupLeather)" stroke="#1a0c05" stroke-width="1.5"/>`;
-  // 金の帯と、その内側のステッチ
-  for (const y of [top + 13, bot - 9]) {
-    s += band(y, 'url(#cupGold)') + ` stroke-width="4"/>`;
-    s += band(y - 5, '#e8cf8a') + ` stroke-width="1" stroke-dasharray="3 3" opacity="0.8"/>`;
-  }
+  // 側面(カーボン柄と、丸みの陰)
+  s += `<path d="${side}" fill="url(#cupCarbon)"/><path d="${side}" fill="url(#cupShade)" stroke="#000" stroke-width="1.5"/>`;
+  // 口の縁と底の縁(少し厚い黒の帯)と、それぞれのステッチ
+  s += ring(top + 6, 'stroke="#000" stroke-width="2" opacity="0.7"') + ring(top + 3, stitch);
+  s += ring(bot - 7, 'stroke="#000" stroke-width="2" opacity="0.7"') + ring(bot - 3.5, stitch);
+  // 縦の縫い目
+  s += `<g clip-path="url(#cupSide)"><line x1="${cx + 13}" y1="${top + 6}" x2="${cx + 13}" y2="${bot - 7}" stroke="#000" stroke-width="2.4" opacity=".6"/>`;
+  s += `<line x1="${cx + 11}" y1="${top + 7}" x2="${cx + 11}" y2="${bot - 8}" ${stitch}/><line x1="${cx + 15}" y1="${top + 7}" x2="${cx + 15}" y2="${bot - 8}" ${stitch}/></g>`;
   // つや
-  s += `<path d="M ${cx - 17} ${top + 4} L ${cx - 13} ${bot - 2}" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity="0.12"/>`;
-  // 口(金の縁と暗い内側)
-  s += `<ellipse cx="${cx}" cy="${top}" rx="27" ry="8.5" fill="url(#cupMouth)" stroke="url(#cupGold)" stroke-width="3.5"/>`;
-  s += `<ellipse cx="${cx}" cy="${top}" rx="22" ry="5.5" fill="none" stroke="#e8cf8a" stroke-width="1" stroke-dasharray="3 3" opacity="0.7"/>`;
-  s += `<text ${tx(cx)} y="${cy + 12}" text-anchor="middle" font-size="16" font-weight="bold" fill="#f6e7c1" stroke="#2a140a" stroke-width="3" paint-order="stroke" letter-spacing="2">振る</text>`;
+  s += `<path d="M ${cx - 15} ${top + 9} L ${cx - 15} ${bot - 6}" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity="0.10"/>`;
+  // 口(赤い内側と、縁のステッチ)
+  s += `<ellipse cx="${cx}" cy="${top}" rx="${r}" ry="${ry}" fill="url(#cupInside)" stroke="#0a0a0a" stroke-width="3.5"/>`;
+  s += `<ellipse cx="${cx}" cy="${top + 0.5}" rx="${r - 3}" ry="${ry - 1.8}" fill="none" ${stitch}/>`;
+  s += `<text ${tx(cx)} y="${cy + 12}" text-anchor="middle" font-size="16" font-weight="bold" fill="#ffffff" stroke="#000" stroke-width="3" paint-order="stroke" letter-spacing="2">振る</text>`;
   return s + `</g>`;
 }
 
@@ -1348,11 +1365,8 @@ function updatePanel() {
   $('sh').textContent = M.score.h; $('sc').textContent = M.score.c; $('target').textContent = `${M.len}点先取`;
   $('matchinfo').textContent = `${M.len} ポイントマッチ・${LEVELS[M.level].name}` + (G.crawford ? '・クロフォードゲーム' : '') + (G.cube.value > 1 ? `・キューブ ${G.cube.value}(${G.cube.owner === 'h' ? 'あなた' : 'コンピューター'}側)` : '');
   const show = (id, on) => { $(id).style.display = on ? '' : 'none'; };
-  const playing = G.phase !== 'humanTake' && G.phase !== 'over';
-  show('btnUndo', playing);
   show('btnNext', G.phase === 'over' && !M.over);
   show('btnResign', G.phase !== 'over' && G.phase !== 'opening');
-  $('btnUndo').disabled = !(G.phase === 'humanMove' && G.played.length > 0);
   $('btnResign').disabled = !canResign();
   if (!canResign()) resignTap.reset();
 }
@@ -1400,17 +1414,16 @@ function shakeRoll() {
 }
 
 svg.addEventListener('click', e => {
-  // ダイスカップ = 振る、キューブ = ダブル/テイク、PASS = パス、薄いダイス = 確定
+  // ダイスカップ = 振る、キューブ = ダブル/テイク、PASS = パス、薄いダイス = 確定、↩ = 戻す
   const act = e.target.closest('[data-act]');
   if (act) {
-    ({ roll: shakeRoll, double: onDouble, take: onTake, pass: onPass, ok: onOk })[act.dataset.act]();
+    ({ roll: shakeRoll, double: onDouble, take: onTake, pass: onPass, ok: onOk, undo: onUndo })[act.dataset.act]();
     return;
   }
   const t = e.target.closest('[data-pt]');
   if (G.phase === 'humanMove' && t) onPoint(+t.dataset.pt);
 });
 
-$('btnUndo').onclick = onUndo;
 $('btnNext').onclick = () => { if (G.phase === 'over' && !M.over) newGame(); };
 $('btnResign').onclick = () => {
   if (canResign() && resignTap.tap(`もう一度押すと投了(${resignPoints().pts} 点を失う)`)) resign();
