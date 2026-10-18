@@ -58,21 +58,25 @@
   details { margin-top: 16px; background: var(--panel); padding: 8px 12px; border-radius: 8px; font-size: .92rem; line-height: 1.6; }
   summary { cursor: pointer; font-weight: bold; }
 
-  /* スマホの横画面(高さが低い): 盤を左に高さいっぱい、スコア・メッセージ・ボタンを右の列へ */
+  /* スマホの横画面(高さが低い): 盤を左に高さいっぱいで大きく、スコア・メッセージ・ボタンは右の細い列に小さくまとめる */
   @media (orientation: landscape) and (max-height: 520px) {
-    #app { display: grid; grid-template-columns: auto minmax(120px, 1fr); column-gap: 8px; align-items: start; padding: 2px 6px 16px; max-width: none; }
-    #board { grid-column: 1; grid-row: 1 / span 4; width: calc((100vh - 6px) * var(--aspect, 1.3086)); width: calc((100dvh - 6px) * var(--aspect, 1.3086)); max-width: calc(100vw - 134px); min-width: 0; margin: 0; }
+    #app { display: grid; grid-template-columns: auto minmax(92px, 1fr); grid-template-rows: auto auto auto 1fr; column-gap: 6px; align-items: start; padding: 2px 4px 16px; max-width: none; }
+    #board { grid-column: 1; grid-row: 1 / span 4; width: calc((100vh - 4px) * var(--aspect, 1.3086)); width: calc((100dvh - 4px) * var(--aspect, 1.3086)); max-width: calc(100vw - 106px); min-width: 0; margin: 0; }
     #top, #sub, #msg, #controls { grid-column: 2; min-width: 0; }
     #setup, details { grid-column: 1 / -1; }
-    h1 { display: none; }
-    #top { grid-row: 1; flex-direction: column; align-items: flex-start; }
-    #score { flex-wrap: wrap; gap: 3px; padding: 2px 6px; }
-    #score b { font-size: 1.3rem; }
-    #score .who { font-size: .72rem; }
-    #sub { grid-row: 2; flex-direction: column; gap: 2px; font-size: .72rem; }
-    #msg { grid-row: 3; min-height: 0; font-size: .78rem; padding: 4px 6px; }
-    #controls { grid-row: 4; gap: 4px; }
-    #controls button { flex: 1 1 calc(50% - 4px); padding: 7px 4px; font-size: .8rem; }
+    h1, #target, .dash, .pipLong { display: none; }
+    #top { grid-row: 1; }
+    /* スコアは 2 行(あなた / コンピューター)で、数字を右にそろえる */
+    #score { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 0 4px; padding: 3px 6px; margin-top: 2px; }
+    #score .who { font-size: .62rem; line-height: 1.2; order: 1; }
+    #sh { order: 2; }
+    #score .who ~ .who { order: 3; }
+    #sc { order: 4; }
+    #score b { font-size: 1.25rem; min-width: 0; }
+    #sub { grid-row: 2; flex-direction: column; gap: 2px; font-size: .64rem; margin-top: 4px; }
+    #msg { grid-row: 3; min-height: 0; font-size: .7rem; line-height: 1.35; padding: 4px 6px; }
+    #controls { grid-row: 4; gap: 4px; flex-direction: column; align-self: end; margin-bottom: 4px; } /* ボタンは親指の届く右下に */
+    #controls button { padding: 8px 4px; font-size: .8rem; }
   }
 </style>
 </head>
@@ -82,7 +86,7 @@
     <h1>バックギャモン</h1>
     <div id="score"><span class="who">あなた</span><b id="sh">0</b><span class="dash">−</span><b id="sc">0</b><span class="who">コンピューター</span><span id="target"></span></div>
   </div>
-  <div id="sub"><span id="matchinfo"></span><label id="pipToggle"><input type="checkbox" id="chkPips" checked> ピップ数を表示</label></div>
+  <div id="sub"><span id="matchinfo"></span><label id="pipToggle"><input type="checkbox" id="chkPips" checked> ピップ数<span class="pipLong">を表示</span></label></div>
   <svg id="board" viewBox="6 2 704 538"></svg>
   <div id="msg"></div>
   <!-- ダイスを振る・ダブル・テイク・パス・確定は盤の上をタップする -->
@@ -732,7 +736,7 @@ function layout() {
   W = 46; R = 21; BW = 44;
   if (window.matchMedia && matchMedia(LANDSCAPE).matches) {
     // ポイントが広がった分だけ駒も大きくし、バーも駒が入る幅にする
-    const vbw = (innerWidth - 150) / (innerHeight - 6) * VIEW_H;
+    const vbw = (innerWidth - 108) / (innerHeight - 4) * VIEW_H;
     for (let k = 0; k < 2; k++) {
       W = Math.max(46, Math.min(90, Math.floor((vbw - 108 - BW) / 12)));
       R = Math.max(21, Math.min(36, Math.floor(W / 2) - 1));
