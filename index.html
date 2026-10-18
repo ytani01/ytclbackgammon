@@ -1104,7 +1104,7 @@ function endGame(w, pts, reason) {
     M.over = true;
     t += `<br><b>${M.len} ポイントマッチは ${M.score.h} 対 ${M.score.c} で${w === 'h' ? 'あなたの勝ちです!' : 'コンピューターの勝ちです。'}</b>「新しいマッチ」でもう一度遊べます。`;
   } else {
-    t += `<br>スコア あなた ${M.score.h} − ${M.score.c} コンピューター。「次のゲーム」を押してください。`;
+    t += `<br>スコア あなた ${M.score.h} − ${M.score.c} コンピューター。「次のゲーム」を押してください${G.banner ? "(PASS の表示をタップしても進めます)" : ""}。`;
   }
   setMsg(t);
   render();
@@ -1232,14 +1232,17 @@ function drawCube() {
   return s;
 }
 
-// PASS の大きな表示(盤の真ん中。タップは下の盤に通す)
+// PASS の大きな表示(盤の真ん中)。次のゲームへ進めるときはタップで進む。それ以外はタップを下の盤に通す
 function drawBanner() {
   if (!G.banner) return '';
   // スマホ横画面で盤が広がったときは、それに合わせて大きくする
-  const k = Math.min(W / 46, 1.6), cx = BX + BW / 2, w = 340 * k, h = 124 * k;
-  let s = `<g pointer-events="none"><rect x="${cx - w / 2}" y="${MID - h / 2}" width="${w}" height="${h}" rx="14" fill="#1a1208" opacity="0.88" stroke="#e0533d" stroke-width="4"/>`;
+  // ゲームが終わってマッチが続くときは、タップで次のゲームへ(その案内の分だけ下に伸ばす)
+  const next = G.phase === 'over' && !M.over;
+  const k = Math.min(W / 46, 1.6), cx = BX + BW / 2, w = 340 * k, h = (next ? 150 : 124) * k;
+  let s = `<g ${next ? 'class="pt" data-act="next"' : 'pointer-events="none"'}><rect x="${cx - w / 2}" y="${MID - 62 * k}" width="${w}" height="${h}" rx="14" fill="#1a1208" opacity="0.88" stroke="#e0533d" stroke-width="4"/>`;
   s += `<text ${tx(cx)} y="${MID + 14 * k}" text-anchor="middle" font-size="${64 * k}" font-weight="bold" letter-spacing="${6 * k}" fill="#ff6b52">${G.banner.text}</text>`;
   s += `<text ${tx(cx)} y="${MID + 46 * k}" text-anchor="middle" font-size="${17 * k}" font-weight="bold" fill="#fff6dc">${G.banner.sub}</text>`;
+  if (next) s += `<text ${tx(cx)} y="${MID + 74 * k}" text-anchor="middle" font-size="${13 * k}" font-weight="bold" fill="${COLOR.gold}">タップで次のゲームへ</text>`;
   return s + '</g>';
 }
 
@@ -1420,17 +1423,18 @@ function shakeRoll() {
 }
 
 svg.addEventListener('click', e => {
-  // ダイスカップ = 振る、キューブ = ダブル/テイク、PASS = パス、薄いダイス = 確定、↩ = 戻す
+  // ダイスカップ = 振る、キューブ = ダブル/テイク、PASS = パス、薄いダイス = 確定、↩ = 戻す、PASS の表示 = 次のゲーム
   const act = e.target.closest('[data-act]');
   if (act) {
-    ({ roll: shakeRoll, double: onDouble, take: onTake, pass: onPass, ok: onOk, undo: onUndo })[act.dataset.act]();
+    ({ roll: shakeRoll, double: onDouble, take: onTake, pass: onPass, ok: onOk, undo: onUndo, next: onNext })[act.dataset.act]();
     return;
   }
   const t = e.target.closest('[data-pt]');
   if (G.phase === 'humanMove' && t) onPoint(+t.dataset.pt);
 });
 
-$('btnNext').onclick = () => { if (G.phase === 'over' && !M.over) newGame(); };
+function onNext() { if (G.phase === 'over' && !M.over) newGame(); }
+$('btnNext').onclick = onNext;
 $('btnResign').onclick = () => {
   if (canResign() && resignTap.tap(`もう一度押すと投了(${resignPoints().pts} 点を失う)`)) resign();
 };
