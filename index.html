@@ -42,7 +42,7 @@
   #chkPips { accent-color: var(--accent); vertical-align: middle; }
 
   /* 盤は幅いっぱい。ただし PC では下の操作ボタンまで 1 画面に収まる高さに抑える */
-  #board { width: min(100%, calc((100vh - 170px) * 1.3086)); min-width: min(100%, 320px); height: auto; margin: 0 auto; display:block; user-select:none; -webkit-user-select:none; touch-action: manipulation; }
+  #board { width: min(100%, calc((100vh - 170px) * var(--aspect, 1.3086))); min-width: min(100%, 320px); height: auto; margin: 0 auto; display:block; user-select:none; -webkit-user-select:none; touch-action: manipulation; }
   .pt { cursor: pointer; }
   /* ダイスカップ: タップできることがわかるよう縁をゆっくり光らせ、タップしたら振る動きをする */
   #board .cup { transform-box: fill-box; transform-origin: 50% 85%; }
@@ -151,7 +151,7 @@
     ・キーボード:<b>Enter</b> でダイスを振る/手番を終える、<b>Backspace</b> で戻す。<br>
     ・負けた側が 1 個も上げていなければギャモン(2 点)、さらに相手のインナーボードかバーに駒が残っていればバックギャモン(3 点)です。<br>
     ・<b>マッチ</b>:下で長さを選んで「新しいマッチ」。先に指定の点数に達したほうがマッチの勝ちです。<br>
-    ・<b>ダブリングキューブ</b>:自分の番でダイスを振る前に盤の真ん中(または自分の側)のキューブをタップすると、点数の倍率を倍にするよう申し込めます。相手はテイク(倍で続行、キューブは相手のものに)かパス(その時点の点数で負け)を選びます。コンピューターにダブルされたら、真ん中の大きなキューブをタップでテイク、その横の「PASS」ボタンでパスです。キューブを持っている側だけが次にダブルできます。<br>
+    ・<b>ダブリングキューブ</b>:自分の番でダイスを振る前に、盤の外(ホームと反対側)にあるキューブをタップすると、点数の倍率を倍にするよう申し込めます。相手はテイク(倍で続行、キューブは相手のものに)かパス(その時点の点数で負け)を選びます。コンピューターにダブルされたら、真ん中の大きなキューブをタップでテイク、その横の「PASS」ボタンでパスです。キューブを持っている側だけが次にダブルできます。<br>
     ・<b>ピップ数</b>:盤の右端(トレイの真ん中)に、上がコンピューター(黒)、下があなた(白)の残り歩数を表示します。右上のチェックで表示を切り替えられます。<br>
     ・<b>投了</b>:「投了」を 2 回押すと、その時点の局面で負けた扱い(1 個も上げていなければギャモン、さらに相手陣地かバーに駒があればバックギャモン、それぞれキューブ倍)になります。<br>
     ・<b>クロフォードルール</b>:どちらかが初めて「あと 1 点で勝ち」になった直後の 1 ゲームは、どちらもダブルできません。
@@ -747,6 +747,8 @@ const LANDSCAPE = '(orientation: landscape) and (max-height: 520px)';
 // W: ポイント幅, R: 駒の半径, BW: バーの幅, BX: バーの左端, RX: 右半分の左端, RE: 右半分の右端,
 // TX0: トレイの左端, TC: トレイの中心, TOTAL: 全体の幅, LC / RC: 左右の半分の中心
 let W = 46, R = 21, BW = 44, BX, RX, RE, TX0, TC, TOTAL, LC, RC;
+// CW: 盤の外(ホームの反対側)にあるキューブ置き場の幅。CUBE_X はその中心、XL は表示範囲の左端
+let CW, CUBE_X, XL;
 
 function layout() {
   W = 46; R = 21; BW = 44;
@@ -754,15 +756,16 @@ function layout() {
     // ポイントが広がった分だけ駒も大きくし、バーも駒が入る幅にする
     const vbw = (innerWidth - 108) / (innerHeight - 4) * VIEW_H;
     for (let k = 0; k < 2; k++) {
-      W = Math.max(46, Math.min(90, Math.floor((vbw - 108 - BW) / 12)));
+      W = Math.max(46, Math.min(90, Math.floor((vbw - 108 - BW - (Math.min(BW - 2, 60) + 16)) / 12)));
       R = Math.max(21, Math.min(36, Math.floor(W / 2) - 1));
       BW = Math.max(44, 2 * R + 4);
     }
   }
   BX = EDGE + 6 * W; RX = BX + BW; RE = RX + 6 * W; TX0 = RE + 20; TC = TX0 + 36; TOTAL = TX0 + 80;
   LC = EDGE + 3 * W; RC = RX + 3 * W;
-  svg.setAttribute('viewBox', `6 2 ${TOTAL - 12} ${VIEW_H}`);
-  svg.style.setProperty('--aspect', ((TOTAL - 12) / VIEW_H).toFixed(4));
+  CW = cubeSize() + 14; CUBE_X = -CW / 2; XL = -CW - 2;
+  svg.setAttribute('viewBox', `${XL} 2 ${TOTAL - 6 - XL} ${VIEW_H}`);
+  svg.style.setProperty('--aspect', ((TOTAL - 6 - XL) / VIEW_H).toFixed(4));
 }
 
 // ポイント p(あなたから見た番号)の左端
@@ -1164,6 +1167,7 @@ function drawBoard() {
   s += `<rect x="${BX}" y="${TOP}" width="${BW}" height="${BOT - TOP}" fill="${COLOR.wood}"/>`;
   s += `<rect x="${TX0}" y="${TOP}" width="${TRAY_W}" height="${BOT - TOP}" rx="6" fill="${COLOR.wood}"/>`;
   s += `<line x1="${TX0}" y1="${MID}" x2="${TX0 + TRAY_W}" y2="${MID}" stroke="${COLOR.woodDark}" stroke-width="3"/>`;
+  s += `<rect x="${-CW}" y="${TOP}" width="${CW}" height="${BOT - TOP}" rx="6" fill="${COLOR.wood}"/>`; // キューブ置き場
   for (let p = 1; p <= 24; p++) {
     const x = colX(p), top = p >= 13;
     const col = p % 2 === 0 ? COLOR.pointRed : COLOR.pointGreen;
@@ -1222,7 +1226,7 @@ function drawBar(st) {
   return s;
 }
 
-// ダブリングキューブ(持ち主の側に置く。クロフォードゲームでは表示しない)。
+// ダブリングキューブ(盤の外、ホームの反対側の置き場で持ち主の側に置く。クロフォードゲームでは表示しない)。
 // ダブルの申し込み中は、新しい値のキューブを盤の真ん中に大きく表示する
 function drawCube() {
   const cx = BX + BW / 2;
@@ -1241,10 +1245,11 @@ function drawCube() {
     return s;
   }
   if (G.crawford || M.len === 1) return '';
-  const cv = G.cube.value === 1 ? 64 : G.cube.value;
+  // ふだんは盤の外、ホームの反対側の置き場に置く
+  const cv = G.cube.value === 1 ? 64 : G.cube.value, x = CUBE_X;
   const cs = cubeSize(), cy = cubeY(), fs = Math.round(cs * (cv >= 10 ? 0.44 : 0.56));
-  let s = `<rect x="${cx - cs / 2}" y="${cy - cs / 2}" width="${cs}" height="${cs}" rx="6" fill="${COLOR.cubeFace}" stroke="${COLOR.ink}" stroke-width="2"/>`;
-  s += `<text ${tx(cx)} y="${cy + fs * 0.36}" text-anchor="middle" font-size="${fs}" font-weight="bold" fill="${COLOR.ink}">${cv}</text>`;
+  let s = `<rect x="${x - cs / 2}" y="${cy - cs / 2}" width="${cs}" height="${cs}" rx="6" fill="${COLOR.cubeFace}" stroke="${COLOR.ink}" stroke-width="2"/>`;
+  s += `<text ${tx(x)} y="${cy + fs * 0.36}" text-anchor="middle" font-size="${fs}" font-weight="bold" fill="${COLOR.ink}">${cv}</text>`;
   return s;
 }
 
@@ -1380,7 +1385,7 @@ function drawCubeAreas() {
   // ダブルできるとき:キューブをタップでダブル
   if (G.phase === 'humanRoll' && canDouble('h') && !G.offer) {
     const cs = cubeSize(), cy = cubeY();
-    return `<rect class="pt" data-act="double" x="${cx - cs / 2 - 3}" y="${cy - cs / 2 - 3}" width="${cs + 6}" height="${cs + 6}" rx="8" fill="transparent" stroke="${COLOR.gold}" stroke-width="3" stroke-dasharray="5 3"/>`;
+    return `<rect class="pt" data-act="double" x="${CUBE_X - cs / 2 - 3}" y="${cy - cs / 2 - 3}" width="${cs + 6}" height="${cs + 6}" rx="8" fill="transparent" stroke="${COLOR.gold}" stroke-width="3" stroke-dasharray="5 3"/>`;
   }
   return '';
 }
@@ -1408,7 +1413,7 @@ function render() {
   const dice = drawDice();
   const s = drawBoard() + drawDestinations() + drawCheckers(st) + drawBar(st) + drawCube() + drawTray(st)
     + dice.s + drawPointAreas() + drawCup() + dice.ok + drawCubeAreas() + drawBanner();
-  svg.innerHTML = M.flip ? `<g transform="translate(${TOTAL},0) scale(-1,1)">${s}</g>` : s;
+  svg.innerHTML = M.flip ? `<g transform="translate(${TOTAL - 6 + XL},0) scale(-1,1)">${s}</g>` : s;
   updatePanel();
 }
 
