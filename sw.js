@@ -1,6 +1,6 @@
 // オフラインでも遊べるように、ゲームのファイルを端末に保存しておく。
 // 通信できるときは最新版を取りに行き、保存しているものを更新する(次に開いたときに反映)
-const CACHE = 'backgammon-v7';
+const CACHE = 'backgammon-v8';
 const FILES = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', e => {

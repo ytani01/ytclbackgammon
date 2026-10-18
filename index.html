@@ -1291,7 +1291,7 @@ function drawUndo(x, on) {
 }
 
 // ダイスカップ(振る番のとき、画面の右側=あなたの側に表示。タップで振る)。
-// 円筒形で、カーボン柄のレザーに赤いステッチ、内側は赤。大きさ(タップできる範囲)は 80×92
+// 円筒形で、カーボン柄のレザーに赤いステッチ、内側は赤。少し傾けて置く。大きさ(タップできる範囲)は 80×92
 function drawCup() {
   if (!canRoll()) return '';
   const cx = M.flip ? LC - 1.5 * W : RC + 1.5 * W, cy = MID, top = cy - 30, bot = cy + 36, r = 25, ry = 8;
@@ -1308,6 +1308,8 @@ function drawCup() {
   s += `<g class="pt cup" data-act="roll">`;
   s += `<rect x="${cx - 40}" y="${cy - 46}" width="80" height="92" fill="transparent"/>`;
   s += `<ellipse cx="${cx}" cy="${bot + 4}" rx="${r + 2}" ry="6" fill="#000" opacity="0.35"/>`;                    // 影
+  // 少し反時計回りに傾けて置く(盤を反転したときも画面では同じ向き)
+  s += `<g transform="rotate(${M.flip ? 10 : -10} ${cx} ${bot})">`;
   s += `<ellipse class="glow" cx="${cx}" cy="${top}" rx="33" ry="12" fill="none" stroke="${COLOR.gold}" stroke-width="4"/>`; // 光る縁
   // 側面(カーボン柄と、丸みの陰)
   s += `<path d="${side}" fill="url(#cupCarbon)"/><path d="${side}" fill="url(#cupShade)" stroke="#000" stroke-width="1.5"/>`;
@@ -1323,7 +1325,7 @@ function drawCup() {
   s += `<ellipse cx="${cx}" cy="${top}" rx="${r}" ry="${ry}" fill="url(#cupInside)" stroke="#0a0a0a" stroke-width="3.5"/>`;
   s += `<ellipse cx="${cx}" cy="${top + 0.5}" rx="${r - 3}" ry="${ry - 1.8}" fill="none" ${stitch}/>`;
   s += `<text ${tx(cx)} y="${cy + 12}" text-anchor="middle" font-size="16" font-weight="bold" fill="#ffffff" stroke="#000" stroke-width="3" paint-order="stroke" letter-spacing="2">振る</text>`;
-  return s + `</g>`;
+  return s + `</g></g>`;
 }
 
 // タップ領域: ポイント・バー・トレイ(data-pt)と、テイク・ダブル(data-act)
