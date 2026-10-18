@@ -85,11 +85,9 @@
   <div id="sub"><span id="matchinfo"></span><label id="pipToggle"><input type="checkbox" id="chkPips" checked> ピップ数を表示</label></div>
   <svg id="board" viewBox="6 2 704 538"></svg>
   <div id="msg"></div>
-  <!-- ダイスを振る・ダブル・テイク・確定は盤の上のタップでもできる -->
+  <!-- ダイスを振る・ダブル・テイク・パス・確定は盤の上をタップする -->
   <div id="controls">
     <button id="btnUndo" class="sub" title="Backspace">戻す</button>
-    <button id="btnOk" title="Enter">確定</button>
-    <button id="btnPass" class="sub">パス</button>
     <button id="btnNext">次のゲーム</button>
     <button id="btnResign" class="sub">投了</button>
   </div>
@@ -130,11 +128,11 @@
     ・相手の駒が 2 個以上あるポイントには止まれません。1 個だけのときは打ち取れ(ヒット)、その駒はバーに戻ります。<br>
     ・バーに駒があるときは、先にそれを相手のインナーボード(奥の 19〜24)へ入れる必要があります。<br>
     ・両方の目を使えるなら必ず両方使います。片方しか使えないときは、大きい目を使える限り大きい目を使います。<br>
-    ・全部動かしたら、薄くなったダイスをタップするか「確定」を押します。やり直したいときは「戻す」を押します。<br>
-    ・キーボード:<b>Enter</b> でダイスを振る/確定、<b>Backspace</b> で戻す。<br>
+    ・全部動かしたら、薄くなったダイスをタップします。やり直したいときは「戻す」を押します。<br>
+    ・キーボード:<b>Enter</b> でダイスを振る/手番を終える、<b>Backspace</b> で戻す。<br>
     ・負けた側が 1 個も上げていなければギャモン(2 点)、さらに相手のインナーボードかバーに駒が残っていればバックギャモン(3 点)です。<br>
     ・<b>マッチ</b>:下で長さを選んで「新しいマッチ」。先に指定の点数に達したほうがマッチの勝ちです。<br>
-    ・<b>ダブリングキューブ</b>:自分の番でダイスを振る前に盤の真ん中(または自分の側)のキューブをタップすると、点数の倍率を倍にするよう申し込めます。相手はテイク(倍で続行、キューブは相手のものに)かパス(その時点の点数で負け)を選びます。コンピューターにダブルされたら、真ん中の大きなキューブをタップでテイク、「パス」ボタンでパスです。キューブを持っている側だけが次にダブルできます。<br>
+    ・<b>ダブリングキューブ</b>:自分の番でダイスを振る前に盤の真ん中(または自分の側)のキューブをタップすると、点数の倍率を倍にするよう申し込めます。相手はテイク(倍で続行、キューブは相手のものに)かパス(その時点の点数で負け)を選びます。コンピューターにダブルされたら、真ん中の大きなキューブをタップでテイク、その横の「PASS」ボタンでパスです。キューブを持っている側だけが次にダブルできます。<br>
     ・<b>ピップ数</b>:盤の右端(トレイの真ん中)に、上がコンピューター(黒)、下があなた(白)の残り歩数を表示します。右上のチェックで表示を切り替えられます。<br>
     ・<b>投了</b>:「投了」を 2 回押すと、その時点の局面で負けた扱い(1 個も上げていなければギャモン、さらに相手陣地かバーに駒があればバックギャモン、それぞれキューブ倍)になります。<br>
     ・<b>クロフォードルール</b>:どちらかが初めて「あと 1 点で勝ち」になった直後の 1 ゲームは、どちらもダブルできません。
@@ -893,7 +891,7 @@ function doPath(path) {
     G.played.push(m);
   }
   computeSteps();
-  if (G.steps.length === 0) setMsg('動かし終わりました。ダイスをタップするか「確定」で手番を終えます(「戻す」でやり直し)。');
+  if (G.steps.length === 0) setMsg('動かし終わりました。ダイスをタップすると手番を終えます(「戻す」でやり直し)。');
   render();
 }
 
@@ -934,7 +932,7 @@ function cpuTurn() {
     const v = G.cube.value;
     G.phase = 'humanTake';
     G.offer = { value: v * 2, by: 'c' };
-    setMsg(`<b>コンピューターがダブルしてきました(キューブ ${v} → ${v * 2})。</b><br><b>キューブをタップでテイク</b>(このゲームは ${v * 2} 点以上に)。「パス」を押すとここで ${v} 点を失います。`);
+    setMsg(`<b>コンピューターがダブルしてきました(キューブ ${v} → ${v * 2})。</b><br><b>キューブをタップでテイク</b>(このゲームは ${v * 2} 点以上に)。「PASS」を押すとここで ${v} 点を失います。`);
     render();
     return;
   }
@@ -1215,7 +1213,12 @@ function drawCube() {
     s += `<text ${tx(cx)} y="${MID - sz / 2 - 8}" text-anchor="middle" font-size="16" font-weight="bold" fill="${COLOR.gold}" pointer-events="none">${G.offer.by === 'h' ? 'あなたのダブル' : 'ダブル!'}</text>`;
     s += `<rect x="${cx - sz / 2}" y="${MID - sz / 2}" width="${sz}" height="${sz}" rx="10" fill="${COLOR.cubeFace}" stroke="${COLOR.gold}" stroke-width="4" pointer-events="none"/>`;
     s += `<text ${tx(cx)} y="${MID + 20}" text-anchor="middle" font-size="${G.offer.value >= 10 ? 48 : 58}" font-weight="bold" fill="${COLOR.ink}" pointer-events="none">${G.offer.value}</text>`;
-    if (take) s += `<text ${tx(cx)} y="${MID + sz / 2 + 16}" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff6dc" pointer-events="none">タップでテイク</text>`;
+    if (take) {
+      s += `<text ${tx(cx)} y="${MID + sz / 2 + 16}" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff6dc" pointer-events="none">タップでテイク</text>`;
+      const b = passButton();
+      s += `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="${10 * b.k}" fill="#1a1208" opacity="0.88" stroke="#e0533d" stroke-width="3" pointer-events="none"/>`;
+      s += `<text ${tx(b.x + b.w / 2)} y="${MID + 10 * b.k}" text-anchor="middle" font-size="${28 * b.k}" font-weight="bold" letter-spacing="${2 * b.k}" fill="#ff6b52" pointer-events="none">PASS</text>`;
+    }
     return s;
   }
   if (G.crawford || M.len === 1) return '';
@@ -1318,11 +1321,19 @@ function drawPointAreas() {
   return s;
 }
 
+// ダブルされたときの PASS ボタン(真ん中のキューブの、画面で右隣)
+function passButton() {
+  const k = Math.min(W / 46, 1.6), w = 104 * k, h = 60 * k, cx = BX + BW / 2;
+  return { k, w, h, x: M.flip ? cx - 92 - w : cx + 92, y: MID - h / 2 };
+}
+
 function drawCubeAreas() {
   const cx = BX + BW / 2;
-  // ダブルされたとき:真ん中の大きなキューブをタップでテイク
+  // ダブルされたとき:真ん中の大きなキューブをタップでテイク、横のボタンでパス
   if (G.phase === 'humanTake' && G.offer) {
-    return `<rect class="pt" data-act="take" x="${cx - 80}" y="${MID - 80}" width="160" height="160" fill="transparent"/>`;
+    const b = passButton();
+    return `<rect class="pt" data-act="take" x="${cx - 80}" y="${MID - 80}" width="160" height="160" fill="transparent"/>`
+      + `<rect class="pt" data-act="pass" x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" fill="transparent"/>`;
   }
   // ダブルできるとき:キューブをタップでダブル
   if (G.phase === 'humanRoll' && canDouble('h') && !G.offer) {
@@ -1339,12 +1350,9 @@ function updatePanel() {
   const show = (id, on) => { $(id).style.display = on ? '' : 'none'; };
   const playing = G.phase !== 'humanTake' && G.phase !== 'over';
   show('btnUndo', playing);
-  show('btnOk', playing);
-  show('btnPass', G.phase === 'humanTake');
   show('btnNext', G.phase === 'over' && !M.over);
   show('btnResign', G.phase !== 'over' && G.phase !== 'opening');
   $('btnUndo').disabled = !(G.phase === 'humanMove' && G.played.length > 0);
-  $('btnOk').disabled = !allPlayed();
   $('btnResign').disabled = !canResign();
   if (!canResign()) resignTap.reset();
 }
@@ -1392,10 +1400,10 @@ function shakeRoll() {
 }
 
 svg.addEventListener('click', e => {
-  // ダイスカップ = 振る、キューブ = ダブル/テイク、薄いダイス = 確定
+  // ダイスカップ = 振る、キューブ = ダブル/テイク、PASS = パス、薄いダイス = 確定
   const act = e.target.closest('[data-act]');
   if (act) {
-    ({ roll: shakeRoll, double: onDouble, take: onTake, ok: onOk })[act.dataset.act]();
+    ({ roll: shakeRoll, double: onDouble, take: onTake, pass: onPass, ok: onOk })[act.dataset.act]();
     return;
   }
   const t = e.target.closest('[data-pt]');
@@ -1403,8 +1411,6 @@ svg.addEventListener('click', e => {
 });
 
 $('btnUndo').onclick = onUndo;
-$('btnOk').onclick = onOk;
-$('btnPass').onclick = onPass;
 $('btnNext').onclick = () => { if (G.phase === 'over' && !M.over) newGame(); };
 $('btnResign').onclick = () => {
   if (canResign() && resignTap.tap(`もう一度押すと投了(${resignPoints().pts} 点を失う)`)) resign();
